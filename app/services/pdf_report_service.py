@@ -386,15 +386,33 @@ def _build_overall_sales(story, data, styles):
 
         fig, ax = plt.subplots(figsize=(7, 3))
         _style_chart(ax, "Monthly Sales Trend")
-        bars = ax.bar(months, amounts, color=CHART_COLORS[0], width=0.6,
+
+        max_amt = max(amounts) if amounts else 0
+        # Use appropriate scale for large values
+        if max_amt >= 1_000_000:
+            scale = 1_000_000
+            scale_label = "(in Millions $)"
+            display_amounts = [a / scale for a in amounts]
+        elif max_amt >= 1_000:
+            scale = 1_000
+            scale_label = "(in Thousands $)"
+            display_amounts = [a / scale for a in amounts]
+        else:
+            scale = 1
+            scale_label = "($)"
+            display_amounts = amounts
+
+        bars = ax.bar(months, display_amounts, color=CHART_COLORS[0], width=0.6,
                       edgecolor="white", linewidth=0.5, zorder=3)
         # Add value labels on bars
+        max_disp = max(display_amounts) if display_amounts else 0
         for bar, val in zip(bars, amounts):
-            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(amounts)*0.02,
-                    _fmt_currency(val), ha="center", va="bottom", fontsize=7,
+            label = _fmt_currency(val)
+            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max_disp*0.02,
+                    label, ha="center", va="bottom", fontsize=7,
                     color="#374151", fontweight="bold")
-        ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: _fmt_currency(x)))
-        ax.set_ylim(0, max(amounts) * 1.2 if amounts else 1)
+        ax.set_ylabel(scale_label, fontsize=8, color="#6B7280")
+        ax.set_ylim(0, max_disp * 1.25 if max_disp > 0 else 1)
         ax.grid(axis="y", alpha=0.3, linestyle="--", color="#D1D5DB")
         plt.xticks(rotation=45, ha="right")
         plt.tight_layout()
@@ -481,14 +499,33 @@ def _build_gross_profit(story, data, styles):
 
         fig, ax = plt.subplots(figsize=(7, 3))
         _style_chart(ax, "Revenue vs Cost of Goods (Monthly)")
+
+        max_val = max(max(rev) if rev else 0, max(cost) if cost else 0)
+        # Use appropriate scale for large values
+        if max_val >= 1_000_000:
+            scale = 1_000_000
+            scale_label = "(in Millions $)"
+        elif max_val >= 1_000:
+            scale = 1_000
+            scale_label = "(in Thousands $)"
+        else:
+            scale = 1
+            scale_label = "($)"
+
+        rev_scaled = [v / scale for v in rev]
+        cost_scaled = [v / scale for v in cost]
+
         x = range(len(months))
-        ax.bar([i - 0.2 for i in x], rev, 0.4, label="Revenue",
+        ax.bar([i - 0.2 for i in x], rev_scaled, 0.4, label="Revenue",
                color=CHART_COLORS[0], edgecolor="white", zorder=3)
-        ax.bar([i + 0.2 for i in x], cost, 0.4, label="COGS",
+        ax.bar([i + 0.2 for i in x], cost_scaled, 0.4, label="COGS",
                color=CHART_COLORS[3], edgecolor="white", zorder=3)
         ax.set_xticks(list(x))
         ax.set_xticklabels(months, rotation=45, ha="right")
-        ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: _fmt_currency(v)))
+        ax.set_ylabel(scale_label, fontsize=8, color="#6B7280")
+        max_disp = max(max(rev_scaled) if rev_scaled else 0,
+                       max(cost_scaled) if cost_scaled else 0)
+        ax.set_ylim(0, max_disp * 1.25 if max_disp > 0 else 1)
         ax.legend(fontsize=8, frameon=False)
         ax.grid(axis="y", alpha=0.3, linestyle="--", color="#D1D5DB")
         plt.tight_layout()
@@ -575,14 +612,24 @@ def _build_accounts_receivable(story, data, styles):
         _make_kpi_card(current, "Current", ACCENT_GREEN, styles),
         _make_kpi_card(overdue, "Overdue", ACCENT_RED, styles),
     ]
-    row = Table([cards], colWidths=[170, 170, 170])
+    # Center the 3-card row within the available page width
+    card_w = 155
+    gap = 10
+    total_cards_w = card_w * 3 + gap * 2
+    side_pad = (480 - total_cards_w) / 2
+    row = Table([cards], colWidths=[card_w, card_w, card_w])
     row.setStyle(TableStyle([
         ("ALIGN", (0, 0), (-1, -1), "CENTER"),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 4),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("LEFTPADDING", (0, 0), (-1, -1), gap // 2),
+        ("RIGHTPADDING", (0, 0), (-1, -1), gap // 2),
     ]))
-    story.append(row)
+    # Wrap in outer table for centering
+    outer = Table([[row]], colWidths=[480])
+    outer.setStyle(TableStyle([
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+    ]))
+    story.append(outer)
     story.append(Spacer(1, 12))
 
     # Aging breakdown chart
@@ -593,8 +640,14 @@ def _build_accounts_receivable(story, data, styles):
         clrs = [CHART_COLORS[1], CHART_COLORS[0], CHART_COLORS[4],
                 CHART_COLORS[3], "#991B1B"][:len(labels)]
 
+        # Filter out zero/negative entries to avoid NaN in pie chart
+        filtered = [(l, a, c) for l, a, c in zip(labels, amounts, clrs) if a > 0]
+        if not filtered:
+            filtered = [("No Data", 1, "#D1D5DB")]
+        labels, amounts, clrs = zip(*filtered)
+
         fig, ax = plt.subplots(figsize=(5, 3))
-        _style_chart(ax, "Receivable Aging")
+        fig.set_facecolor("#FFFFFF")
         wedges, texts, autotexts = ax.pie(
             amounts, labels=labels, colors=clrs, autopct="%1.1f%%",
             startangle=90, pctdistance=0.75, textprops={"fontsize": 8})
@@ -642,14 +695,20 @@ def _build_accounts_payable(story, data, styles):
         _make_kpi_card(current, "Current", ACCENT_GREEN, styles),
         _make_kpi_card(overdue, "Overdue", ACCENT_RED, styles),
     ]
-    row = Table([cards], colWidths=[170, 170, 170])
+    card_w = 155
+    gap = 10
+    row = Table([cards], colWidths=[card_w, card_w, card_w])
     row.setStyle(TableStyle([
         ("ALIGN", (0, 0), (-1, -1), "CENTER"),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 4),
-        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("LEFTPADDING", (0, 0), (-1, -1), gap // 2),
+        ("RIGHTPADDING", (0, 0), (-1, -1), gap // 2),
     ]))
-    story.append(row)
+    outer = Table([[row]], colWidths=[480])
+    outer.setStyle(TableStyle([
+        ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+    ]))
+    story.append(outer)
     story.append(Spacer(1, 12))
 
     # Payable details (no vendor names/emails)

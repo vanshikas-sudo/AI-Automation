@@ -1,7 +1,7 @@
 import hashlib
 import hmac
 import os
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import httpx
@@ -30,23 +30,41 @@ def settings() -> Settings:
     return get_settings()
 
 
+def _make_mock_mcp_manager():
+    """Create a mock MCPManager with a ToolRegistry that has no real tools."""
+    from app.mcp.tool_registry import ToolRegistry
+
+    mgr = MagicMock()
+    mgr.registry = ToolRegistry()
+    mgr.zoho_org_id = "test_org_123"
+    mgr.is_connected = True
+    mgr.initialize = AsyncMock()
+    mgr.ensure_connected = AsyncMock()
+    mgr.close = AsyncMock()
+    return mgr
+
+
 @pytest.fixture()
 def client():
-    """Synchronous FastAPI test client with a mocked http_client on app state."""
-    with TestClient(app) as c:
-        # Replace the real httpx client with a mock for outbound calls
-        app.state.http_client = AsyncMock(spec=httpx.AsyncClient)
-        # Default response for POST calls to WhatsApp API
-        # Use MagicMock because httpx Response.json() and raise_for_status() are sync
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "messaging_product": "whatsapp",
-            "contacts": [{"input": "1234567890", "wa_id": "1234567890"}],
-            "messages": [{"id": "wamid.test123"}],
-        }
-        app.state.http_client.post.return_value = mock_response
-        yield c
+    """Synchronous FastAPI test client with mocked app.state dependencies."""
+    # Patch MCPManager and create_chat_model so lifespan doesn't hit real services
+    mock_mcp = _make_mock_mcp_manager()
+    mock_model = MagicMock()
+
+    with patch("app.main.MCPManager", return_value=mock_mcp), \
+         patch("app.main.create_chat_model", return_value=mock_model):
+        with TestClient(app) as c:
+            # Replace the real httpx client with a mock for outbound calls
+            app.state.http_client = AsyncMock(spec=httpx.AsyncClient)
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {
+                "messaging_product": "whatsapp",
+                "contacts": [{"input": "1234567890", "wa_id": "1234567890"}],
+                "messages": [{"id": "wamid.test123"}],
+            }
+            app.state.http_client.post.return_value = mock_response
+            yield c
 
 
 # ── Sample payloads ──────────────────────────────────────────────

@@ -88,6 +88,7 @@ def _create_azure(api_key: str, model: str, settings: Settings) -> BaseChatModel
         azure_endpoint=settings.azure_endpoint,
         api_version=settings.azure_api_version,
         azure_deployment=settings.azure_deployment or model,
+        max_tokens=16384,
     )
 
 

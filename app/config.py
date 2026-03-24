@@ -46,6 +46,10 @@ class Settings(BaseSettings):
     mcp_zoho_url: str = "https://alamdar-60066849453.zohomcp.in/mcp/message?key=eb845ca8d22bf98f43e7f3b9296c2234"
     zoho_org_id: str = ""
 
+    # Token optimization
+    max_history_messages: int = 10
+    session_ttl_minutes: int = 30
+
     model_config = {
         "env_file": ".env",
         "env_file_encoding": "utf-8",

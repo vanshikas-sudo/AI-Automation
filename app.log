@@ -1,0 +1,16 @@
+2026-03-23 19:49:59,938 INFO [app.providers.llm_factory] Creating LLM: provider=azure, model=gpt-4o
+2026-03-23 19:50:07,767 INFO [app.mcp.client] MCP connect attempt 1/5 (streamable_http) to https://crm-automation-01-915795771.zohomcp.com/mcp/c451a3577793d763f68fb6843079
+2026-03-23 19:50:09,833 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/c451a3577793d763f68fb68430790ac6/message "HTTP/1.1 200 "
+2026-03-23 19:50:09,840 INFO [mcp.client.streamable_http] Negotiated protocol version: 2025-11-25
+2026-03-23 19:50:10,160 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/c451a3577793d763f68fb68430790ac6/message "HTTP/1.1 202 "
+2026-03-23 19:50:11,435 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/c451a3577793d763f68fb68430790ac6/message "HTTP/1.1 200 "
+2026-03-23 19:50:11,498 INFO [app.mcp.client] MCP connected (streamable_http) — 32 raw tools available
+2026-03-23 19:50:11,505 INFO [app.mcp.tool_registry] ToolRegistry: kept 27/32 tools
+2026-03-23 19:50:11,505 INFO [app.mcp.manager] Auto-fetching Zoho organization ID…
+2026-03-23 19:50:13,531 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/c451a3577793d763f68fb68430790ac6/message "HTTP/1.1 200 "
+2026-03-23 19:50:13,534 INFO [mcp.client.streamable_http] Negotiated protocol version: 2025-11-25
+2026-03-23 19:50:13,835 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/c451a3577793d763f68fb68430790ac6/message "HTTP/1.1 202 "
+2026-03-23 19:50:14,869 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/c451a3577793d763f68fb68430790ac6/message "HTTP/1.1 200 "
+2026-03-23 19:50:15,215 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/c451a3577793d763f68fb68430790ac6/message "HTTP/1.1 200 "
+2026-03-23 19:50:15,253 INFO [app.mcp.manager] Auto-detected Zoho org: S Sales (ID: 915780702)
+2026-03-23 19:50:15,254 INFO [app.main] MCP initialized successfully with 27 tools
