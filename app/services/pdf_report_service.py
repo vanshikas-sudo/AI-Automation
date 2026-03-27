@@ -384,42 +384,49 @@ def _build_overall_sales(story, data, styles):
         months = [m.get("month", "") for m in monthly]
         amounts = [float(m.get("amount", 0)) for m in monthly]
 
-        fig, ax = plt.subplots(figsize=(7, 3))
-        _style_chart(ax, "Monthly Sales Trend")
+        # Only render chart if there's actual data
+        if any(a > 0 for a in amounts):
+            fig, ax = plt.subplots(figsize=(7, 3))
+            _style_chart(ax, "Monthly Sales Trend")
 
-        max_amt = max(amounts) if amounts else 0
-        # Use appropriate scale for large values
-        if max_amt >= 1_000_000:
-            scale = 1_000_000
-            scale_label = "(in Millions $)"
-            display_amounts = [a / scale for a in amounts]
-        elif max_amt >= 1_000:
-            scale = 1_000
-            scale_label = "(in Thousands $)"
-            display_amounts = [a / scale for a in amounts]
+            max_amt = max(amounts) if amounts else 0
+            # Use appropriate scale for large values
+            if max_amt >= 1_000_000:
+                scale = 1_000_000
+                scale_label = "(in Millions $)"
+                display_amounts = [a / scale for a in amounts]
+            elif max_amt >= 1_000:
+                scale = 1_000
+                scale_label = "(in Thousands $)"
+                display_amounts = [a / scale for a in amounts]
+            else:
+                scale = 1
+                scale_label = "($)"
+                display_amounts = amounts
+
+            bars = ax.bar(months, display_amounts, color=CHART_COLORS[0], width=0.6,
+                          edgecolor="white", linewidth=0.5, zorder=3)
+            # Add value labels on bars
+            max_disp = max(display_amounts) if display_amounts else 0
+            for bar, val in zip(bars, amounts):
+                label = _fmt_currency(val)
+                ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max_disp*0.02,
+                        label, ha="center", va="bottom", fontsize=7,
+                        color="#374151", fontweight="bold")
+            ax.set_ylabel(scale_label, fontsize=8, color="#6B7280")
+            ax.set_ylim(0, max_disp * 1.25 if max_disp > 0 else 1)
+            ax.grid(axis="y", alpha=0.3, linestyle="--", color="#D1D5DB")
+            plt.xticks(rotation=45, ha="right")
+            plt.tight_layout()
+
+            buf = _create_chart_image(fig)
+            story.append(Image(buf, width=480, height=200))
+            story.append(Spacer(1, 12))
         else:
-            scale = 1
-            scale_label = "($)"
-            display_amounts = amounts
-
-        bars = ax.bar(months, display_amounts, color=CHART_COLORS[0], width=0.6,
-                      edgecolor="white", linewidth=0.5, zorder=3)
-        # Add value labels on bars
-        max_disp = max(display_amounts) if display_amounts else 0
-        for bar, val in zip(bars, amounts):
-            label = _fmt_currency(val)
-            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max_disp*0.02,
-                    label, ha="center", va="bottom", fontsize=7,
-                    color="#374151", fontweight="bold")
-        ax.set_ylabel(scale_label, fontsize=8, color="#6B7280")
-        ax.set_ylim(0, max_disp * 1.25 if max_disp > 0 else 1)
-        ax.grid(axis="y", alpha=0.3, linestyle="--", color="#D1D5DB")
-        plt.xticks(rotation=45, ha="right")
-        plt.tight_layout()
-
-        buf = _create_chart_image(fig)
-        story.append(Image(buf, width=480, height=200))
-        story.append(Spacer(1, 12))
+            story.append(Paragraph(
+                "<i>No monthly sales data available for this fiscal year period.</i>",
+                styles["BodyText2"]))
+            story.append(Spacer(1, 12))
 
     # Sales breakdown table
     sales_data = data.get("sales_breakdown", [])
@@ -497,42 +504,49 @@ def _build_gross_profit(story, data, styles):
         rev = [float(m.get("revenue", 0)) for m in monthly_gp]
         cost = [float(m.get("cost", 0)) for m in monthly_gp]
 
-        fig, ax = plt.subplots(figsize=(7, 3))
-        _style_chart(ax, "Revenue vs Cost of Goods (Monthly)")
+        # Only render chart if there's actual data
+        if any(v > 0 for v in rev) or any(v > 0 for v in cost):
+            fig, ax = plt.subplots(figsize=(7, 3))
+            _style_chart(ax, "Revenue vs Cost of Goods (Monthly)")
 
-        max_val = max(max(rev) if rev else 0, max(cost) if cost else 0)
-        # Use appropriate scale for large values
-        if max_val >= 1_000_000:
-            scale = 1_000_000
-            scale_label = "(in Millions $)"
-        elif max_val >= 1_000:
-            scale = 1_000
-            scale_label = "(in Thousands $)"
+            max_val = max(max(rev) if rev else 0, max(cost) if cost else 0)
+            # Use appropriate scale for large values
+            if max_val >= 1_000_000:
+                scale = 1_000_000
+                scale_label = "(in Millions $)"
+            elif max_val >= 1_000:
+                scale = 1_000
+                scale_label = "(in Thousands $)"
+            else:
+                scale = 1
+                scale_label = "($)"
+
+            rev_scaled = [v / scale for v in rev]
+            cost_scaled = [v / scale for v in cost]
+
+            x = range(len(months))
+            ax.bar([i - 0.2 for i in x], rev_scaled, 0.4, label="Revenue",
+                   color=CHART_COLORS[0], edgecolor="white", zorder=3)
+            ax.bar([i + 0.2 for i in x], cost_scaled, 0.4, label="COGS",
+                   color=CHART_COLORS[3], edgecolor="white", zorder=3)
+            ax.set_xticks(list(x))
+            ax.set_xticklabels(months, rotation=45, ha="right")
+            ax.set_ylabel(scale_label, fontsize=8, color="#6B7280")
+            max_disp = max(max(rev_scaled) if rev_scaled else 0,
+                           max(cost_scaled) if cost_scaled else 0)
+            ax.set_ylim(0, max_disp * 1.25 if max_disp > 0 else 1)
+            ax.legend(fontsize=8, frameon=False)
+            ax.grid(axis="y", alpha=0.3, linestyle="--", color="#D1D5DB")
+            plt.tight_layout()
+
+            buf = _create_chart_image(fig)
+            story.append(Image(buf, width=480, height=200))
+            story.append(Spacer(1, 16))
         else:
-            scale = 1
-            scale_label = "($)"
-
-        rev_scaled = [v / scale for v in rev]
-        cost_scaled = [v / scale for v in cost]
-
-        x = range(len(months))
-        ax.bar([i - 0.2 for i in x], rev_scaled, 0.4, label="Revenue",
-               color=CHART_COLORS[0], edgecolor="white", zorder=3)
-        ax.bar([i + 0.2 for i in x], cost_scaled, 0.4, label="COGS",
-               color=CHART_COLORS[3], edgecolor="white", zorder=3)
-        ax.set_xticks(list(x))
-        ax.set_xticklabels(months, rotation=45, ha="right")
-        ax.set_ylabel(scale_label, fontsize=8, color="#6B7280")
-        max_disp = max(max(rev_scaled) if rev_scaled else 0,
-                       max(cost_scaled) if cost_scaled else 0)
-        ax.set_ylim(0, max_disp * 1.25 if max_disp > 0 else 1)
-        ax.legend(fontsize=8, frameon=False)
-        ax.grid(axis="y", alpha=0.3, linestyle="--", color="#D1D5DB")
-        plt.tight_layout()
-
-        buf = _create_chart_image(fig)
-        story.append(Image(buf, width=480, height=200))
-        story.append(Spacer(1, 16))
+            story.append(Paragraph(
+                "<i>No revenue/cost data available for monthly gross profit chart.</i>",
+                styles["BodyText2"]))
+            story.append(Spacer(1, 16))
 
 
 def _build_performance_items(story, data, styles):
@@ -541,11 +555,13 @@ def _build_performance_items(story, data, styles):
 
     # Top 5
     top5 = data.get("top_5_items", [])
-    if top5:
+    # Filter out items with zero revenue
+    top5_valid = [i for i in top5 if float(i.get("revenue", 0)) > 0]
+    if top5_valid:
         story.append(Paragraph("Top 5 Performing Items", styles["SubSectionTitle"]))
         headers = ["#", "Item", "Revenue", "Units Sold", "Margin"]
         rows = []
-        for i, item in enumerate(top5[:5], 1):
+        for i, item in enumerate(top5_valid[:5], 1):
             rows.append([
                 str(i),
                 item.get("name", ""),
@@ -558,33 +574,41 @@ def _build_performance_items(story, data, styles):
         story.append(Spacer(1, 16))
 
     # Chart for top 5
-    if top5:
-        names = [i.get("name", "")[:20] for i in top5[:5]]
-        revenues = [float(i.get("revenue", 0)) for i in top5[:5]]
+    if top5_valid:
+        names = [i.get("name", "")[:20] for i in top5_valid[:5]]
+        revenues = [float(i.get("revenue", 0)) for i in top5_valid[:5]]
 
-        fig, ax = plt.subplots(figsize=(7, 2.5))
-        _style_chart(ax, "Top 5 Items by Revenue")
-        bars = ax.barh(names[::-1], revenues[::-1],
-                       color=[CHART_COLORS[i % len(CHART_COLORS)] for i in range(len(names))],
-                       edgecolor="white", height=0.5, zorder=3)
-        for bar, val in zip(bars, revenues[::-1]):
-            ax.text(bar.get_width() + max(revenues)*0.02, bar.get_y() + bar.get_height()/2,
-                    _fmt_currency(val), va="center", fontsize=7, color="#374151")
-        ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: _fmt_currency(v)))
-        ax.grid(axis="x", alpha=0.3, linestyle="--", color="#D1D5DB")
-        plt.tight_layout()
+        if any(r > 0 for r in revenues):
+            fig, ax = plt.subplots(figsize=(7, 2.5))
+            _style_chart(ax, "Top 5 Items by Revenue")
+            bars = ax.barh(names[::-1], revenues[::-1],
+                           color=[CHART_COLORS[i % len(CHART_COLORS)] for i in range(len(names))],
+                           edgecolor="white", height=0.5, zorder=3)
+            for bar, val in zip(bars, revenues[::-1]):
+                ax.text(bar.get_width() + max(revenues)*0.02, bar.get_y() + bar.get_height()/2,
+                        _fmt_currency(val), va="center", fontsize=7, color="#374151")
+            ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: _fmt_currency(v)))
+            ax.grid(axis="x", alpha=0.3, linestyle="--", color="#D1D5DB")
+            plt.tight_layout()
 
-        buf = _create_chart_image(fig)
-        story.append(Image(buf, width=480, height=170))
-        story.append(Spacer(1, 16))
+            buf = _create_chart_image(fig)
+            story.append(Image(buf, width=480, height=170))
+            story.append(Spacer(1, 16))
+
+    if not top5_valid:
+        story.append(Paragraph(
+            "<i>No item performance data available for this period.</i>",
+            styles["BodyText2"]))
+        story.append(Spacer(1, 12))
 
     # Least 5
     least5 = data.get("least_5_items", [])
-    if least5:
+    least5_valid = [i for i in least5 if float(i.get("revenue", 0)) > 0]
+    if least5_valid:
         story.append(Paragraph("Least 5 Performing Items", styles["SubSectionTitle"]))
         headers = ["#", "Item", "Revenue", "Units Sold", "Margin"]
         rows = []
-        for i, item in enumerate(least5[:5], 1):
+        for i, item in enumerate(least5_valid[:5], 1):
             rows.append([
                 str(i),
                 item.get("name", ""),
@@ -733,14 +757,22 @@ def _build_accounts_payable(story, data, styles):
 def _build_regional_comparison(story, data, styles):
     """Regional Comparison — where cash is coming from."""
     story.append(Paragraph("Regional Comparison", styles["SectionTitle"]))
+
+    regions = data.get("regional_data", [])
+    if not regions:
+        story.append(Paragraph(
+            "<i>No regional data available. Regional breakdown requires location-based "
+            "invoicing data in Zoho Books.</i>",
+            styles["BodyText2"]))
+        story.append(Spacer(1, 16))
+        return
+
     story.append(Paragraph(
         "Analysis of revenue distribution across regions, showing where the "
         "majority of cash inflows originate.",
         styles["BodyText2"],
     ))
     story.append(Spacer(1, 8))
-
-    regions = data.get("regional_data", [])
     if regions:
         names = [r.get("region", "") for r in regions]
         amounts = [float(r.get("amount", 0)) for r in regions]
@@ -792,6 +824,15 @@ def _build_expense_breakdown(story, data, styles):
     story.append(Paragraph("Expense Breakdown", styles["SectionTitle"]))
 
     expenses = data.get("expense_breakdown", [])
+    # Filter out zero-amount entries
+    expenses = [e for e in expenses if float(e.get("amount", 0)) > 0]
+    if not expenses:
+        story.append(Paragraph(
+            "<i>No expense/bill data available for this fiscal year period.</i>",
+            styles["BodyText2"]))
+        story.append(Spacer(1, 16))
+        return
+
     if expenses:
         cats = [e.get("category", "") for e in expenses]
         amts = [float(e.get("amount", 0)) for e in expenses]
@@ -899,23 +940,25 @@ def _build_journal_report(story, data, styles):
         debits = [float(m.get("debit", 0)) for m in monthly]
         credits = [float(m.get("credit", 0)) for m in monthly]
 
-        fig, ax = plt.subplots(figsize=(7, 2.8))
-        _style_chart(ax, "Monthly Journal Activity")
-        x = range(len(months))
-        ax.plot(list(x), debits, marker="o", color=CHART_COLORS[0],
-                linewidth=2, markersize=5, label="Debits", zorder=3)
-        ax.plot(list(x), credits, marker="s", color=CHART_COLORS[1],
-                linewidth=2, markersize=5, label="Credits", zorder=3)
-        ax.set_xticks(list(x))
-        ax.set_xticklabels(months, rotation=45, ha="right")
-        ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: _fmt_currency(v)))
-        ax.legend(fontsize=8, frameon=False)
-        ax.grid(axis="y", alpha=0.3, linestyle="--", color="#D1D5DB")
-        plt.tight_layout()
+        # Only render chart if there's actual data
+        if any(d > 0 for d in debits) or any(c > 0 for c in credits):
+            fig, ax = plt.subplots(figsize=(7, 2.8))
+            _style_chart(ax, "Monthly Journal Activity")
+            x = range(len(months))
+            ax.plot(list(x), debits, marker="o", color=CHART_COLORS[0],
+                    linewidth=2, markersize=5, label="Debits", zorder=3)
+            ax.plot(list(x), credits, marker="s", color=CHART_COLORS[1],
+                    linewidth=2, markersize=5, label="Credits", zorder=3)
+            ax.set_xticks(list(x))
+            ax.set_xticklabels(months, rotation=45, ha="right")
+            ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: _fmt_currency(v)))
+            ax.legend(fontsize=8, frameon=False)
+            ax.grid(axis="y", alpha=0.3, linestyle="--", color="#D1D5DB")
+            plt.tight_layout()
 
-        buf = _create_chart_image(fig)
-        story.append(Image(buf, width=480, height=190))
-        story.append(Spacer(1, 16))
+            buf = _create_chart_image(fig)
+            story.append(Image(buf, width=480, height=190))
+            story.append(Spacer(1, 16))
 
 
 def _build_strategic_insights(story, data, styles):

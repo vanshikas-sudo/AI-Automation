@@ -36,6 +36,22 @@ async def handle_message(msg: IncomingMessage, app_state) -> None:
     try:
         # Step 1: Classify intent (zero tokens)
         intent = classify(msg.text)
+
+        # If user is replying with an org name during selection, route to ZOHO_CRUD
+        if (
+            intent == Intent.CHAT
+            and SessionManager.get_history(msg.from_number)
+            and not SessionManager.has_org(msg.from_number)
+        ):
+            mcp_mgr = getattr(app_state, "mcp_manager", None)
+            if (
+                mcp_mgr
+                and len(mcp_mgr.zoho_organizations) > 1
+                and mcp_mgr.get_org_id_by_name(msg.text)
+            ):
+                intent = Intent.ZOHO_CRUD
+                logger.info("[MSG] Redirected to ZOHO_CRUD for org selection: %s", msg.text)
+
         logger.info("[MSG] Intent: %s", intent.value)
 
         # Step 2: Route by intent

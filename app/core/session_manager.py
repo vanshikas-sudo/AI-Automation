@@ -26,6 +26,7 @@ class SessionManager:
 
     _sessions: dict[str, list[dict[str, str]]] = defaultdict(list)
     _last_activity: dict[str, float] = {}
+    _selected_org: dict[str, dict[str, str]] = {}  # phone → {org_id, org_name}
 
     @classmethod
     def configure(cls, max_history: int = 10, session_ttl_minutes: int = 30) -> None:
@@ -74,6 +75,21 @@ class SessionManager:
         """Explicitly clear a user's session."""
         cls._sessions.pop(phone, None)
         cls._last_activity.pop(phone, None)
+        cls._selected_org.pop(phone, None)
+
+    # ── Organization selection ───────────────────────────────
+
+    @classmethod
+    def set_org(cls, phone: str, org_id: str, org_name: str) -> None:
+        cls._selected_org[phone] = {"org_id": org_id, "org_name": org_name}
+
+    @classmethod
+    def get_org(cls, phone: str) -> dict[str, str] | None:
+        return cls._selected_org.get(phone)
+
+    @classmethod
+    def has_org(cls, phone: str) -> bool:
+        return phone in cls._selected_org
 
     # ── Response extraction ──────────────────────────────────
 
@@ -119,4 +135,4 @@ class SessionManager:
         last = cls._last_activity.get(phone)
         if last and (time.monotonic() - last) > SESSION_TTL:
             logger.info("Session expired for %s (idle > %d min)", phone, SESSION_TTL // 60)
-            cls.clear(phone)
+            cls.clear(phone)  # also clears org selection

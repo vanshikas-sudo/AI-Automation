@@ -56,6 +56,14 @@ TOOL_GROUPS: dict[str, set[str]] = {
         "ZohoBooks_get_opening_balance",
         "ZohoBooks_get_fixed_asset",
     },
+    "expenses": {
+        "ZohoBooks_list_expenses",
+        "ZohoBooks_get_expense",
+    },
+    "journals": {
+        "ZohoBooks_list_journals",
+        "ZohoBooks_get_journal",
+    },
     "organization": {
         "ZohoBooks_get_organization",
         "ZohoBooks_list_organizations",
@@ -76,7 +84,7 @@ _ZOHO_CRUD_TOOLS: set[str] = set(ALL_ALLOWED_TOOLS)
 # REPORT: read-only data collection (no create/update/delete)
 _REPORT_TOOLS: set[str] = set()
 for group in ("invoices", "items", "bills", "sales_orders", "payments",
-              "accounting", "organization"):
+              "accounting", "expenses", "journals", "organization"):
     _REPORT_TOOLS.update(TOOL_GROUPS[group])
 # Exclude write tools from report
 _REPORT_TOOLS -= {"ZohoBooks_create_invoice"}

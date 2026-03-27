@@ -18,16 +18,17 @@ from app.core.intent_router import Intent
 def build_prompt(
     intent: Intent,
     zoho_org_id: str | None = None,
+    zoho_organizations: list[dict] | None = None,
     custom_base: str | None = None,
 ) -> str:
     """
     Build a minimal, intent-scoped system prompt.
 
     Args:
-        intent:      The classified user intent.
-        zoho_org_id: Zoho organization ID (injected so the LLM doesn't waste
-                     a tool call fetching it every time).
-        custom_base: Optional override for the base identity line.
+        intent:              The classified user intent.
+        zoho_org_id:         Zoho organization ID (when already selected).
+        zoho_organizations:  All available orgs [{name, organization_id}, ...].
+        custom_base:         Optional override for the base identity line.
 
     Returns:
         Assembled system prompt string.
@@ -76,13 +77,29 @@ def build_prompt(
     # Intent.CLEAR is handled before reaching the prompt builder
 
     # ── Zoho org ID injection ────────────────────────────────
-    if zoho_org_id and intent in (Intent.ZOHO_CRUD, Intent.REPORT):
-        parts.append(
-            f"Zoho organization_id: {zoho_org_id}. "
-            "IMPORTANT: All ZohoBooks tools expect parameters nested inside a wrapper object. "
-            "For list tools, wrap parameters inside \"query_params\". "
-            "For get tools, use \"path_params\" for resource IDs and \"query_params\" for organization_id. "
-            f"Example: {{\"query_params\": {{\"organization_id\": \"{zoho_org_id}\"}}}}"
-        )
+    if intent in (Intent.ZOHO_CRUD, Intent.REPORT):
+        if zoho_org_id:
+            # Org already selected — inject it directly
+            parts.append(
+                f"Zoho organization_id: {zoho_org_id}. "
+                "IMPORTANT: All ZohoBooks tools expect parameters nested inside a wrapper object. "
+                "For list tools, wrap parameters inside \"query_params\". "
+                "For get tools, use \"path_params\" for resource IDs and \"query_params\" for organization_id. "
+                f"Example: {{\"query_params\": {{\"organization_id\": \"{zoho_org_id}\"}}}}"
+            )
+        elif zoho_organizations and len(zoho_organizations) > 1:
+            # Multiple orgs available — instruct LLM to ask user
+            org_list = "\n".join(
+                f"  - {org['name']}"
+                for org in zoho_organizations
+            )
+            parts.append(
+                "IMPORTANT: Multiple Zoho organizations are available. "
+                "Before performing ANY Zoho operation, you MUST ask the user which organization "
+                "they want to work with. Present the following organization names and ask them to choose:\n"
+                f"{org_list}\n\n"
+                "Once the user tells you the organization name, use it for the request. "
+                "Do NOT proceed with any Zoho tool call until the user has selected an organization."
+            )
 
     return "\n\n".join(parts)

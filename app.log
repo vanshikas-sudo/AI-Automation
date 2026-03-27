@@ -1,16 +1,17 @@
-2026-03-23 19:49:59,938 INFO [app.providers.llm_factory] Creating LLM: provider=azure, model=gpt-4o
-2026-03-23 19:50:07,767 INFO [app.mcp.client] MCP connect attempt 1/5 (streamable_http) to https://crm-automation-01-915795771.zohomcp.com/mcp/c451a3577793d763f68fb6843079
-2026-03-23 19:50:09,833 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/c451a3577793d763f68fb68430790ac6/message "HTTP/1.1 200 "
-2026-03-23 19:50:09,840 INFO [mcp.client.streamable_http] Negotiated protocol version: 2025-11-25
-2026-03-23 19:50:10,160 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/c451a3577793d763f68fb68430790ac6/message "HTTP/1.1 202 "
-2026-03-23 19:50:11,435 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/c451a3577793d763f68fb68430790ac6/message "HTTP/1.1 200 "
-2026-03-23 19:50:11,498 INFO [app.mcp.client] MCP connected (streamable_http) — 32 raw tools available
-2026-03-23 19:50:11,505 INFO [app.mcp.tool_registry] ToolRegistry: kept 27/32 tools
-2026-03-23 19:50:11,505 INFO [app.mcp.manager] Auto-fetching Zoho organization ID…
-2026-03-23 19:50:13,531 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/c451a3577793d763f68fb68430790ac6/message "HTTP/1.1 200 "
-2026-03-23 19:50:13,534 INFO [mcp.client.streamable_http] Negotiated protocol version: 2025-11-25
-2026-03-23 19:50:13,835 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/c451a3577793d763f68fb68430790ac6/message "HTTP/1.1 202 "
-2026-03-23 19:50:14,869 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/c451a3577793d763f68fb68430790ac6/message "HTTP/1.1 200 "
-2026-03-23 19:50:15,215 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/c451a3577793d763f68fb68430790ac6/message "HTTP/1.1 200 "
-2026-03-23 19:50:15,253 INFO [app.mcp.manager] Auto-detected Zoho org: S Sales (ID: 915780702)
-2026-03-23 19:50:15,254 INFO [app.main] MCP initialized successfully with 27 tools
+2026-03-27 09:07:46,510 INFO [app.providers.llm_factory] Creating LLM: provider=azure, model=gpt-4o
+2026-03-27 09:07:51,380 INFO [app.mcp.client] MCP connect attempt 1/5 (streamable_http) to https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23a
+2026-03-27 09:07:53,468 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 09:07:53,483 INFO [mcp.client.streamable_http] Negotiated protocol version: 2025-11-25
+2026-03-27 09:07:53,818 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 202 "
+2026-03-27 09:07:55,238 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 09:07:55,252 INFO [app.mcp.client] MCP connected (streamable_http) — 32 raw tools available
+2026-03-27 09:07:55,254 INFO [app.mcp.tool_registry] ToolRegistry: received 32 raw tools, sample names: ['ZohoBooks_list_chart_of_account_transactions', 'ZohoBooks_list_bill_payments', 'ZohoBooks_list_invoice_comments', 'ZohoBooks_list_bills', 'ZohoBooks_list_sales_orders', 'ZohoBooks_list_vendor_payments', 'ZohoBooks_list_items', 'ZohoBooks_list_chart_of_accounts']
+2026-03-27 09:07:55,255 INFO [app.mcp.tool_registry] ToolRegistry: kept 27/32 tools — ['ZohoBooks_create_invoice', 'ZohoBooks_get_bill', 'ZohoBooks_get_chart_of_account', 'ZohoBooks_get_contact', 'ZohoBooks_get_contact_address', 'ZohoBooks_get_contact_person', 'ZohoBooks_get_customer_payment', 'ZohoBooks_get_fixed_asset', 'ZohoBooks_get_invoice', 'ZohoBooks_get_item']
+2026-03-27 09:07:55,256 INFO [app.mcp.manager] Auto-fetching Zoho organizations…
+2026-03-27 09:07:56,985 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 09:07:56,987 INFO [mcp.client.streamable_http] Negotiated protocol version: 2025-11-25
+2026-03-27 09:07:57,307 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 202 "
+2026-03-27 09:07:58,434 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 09:07:58,771 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 09:07:58,783 INFO [app.mcp.manager] Found 3 Zoho org(s): ['Live Box Demo', 'S Sales', 'S Salon']
+2026-03-27 09:07:58,783 INFO [app.main] MCP initialized successfully with 27 tools

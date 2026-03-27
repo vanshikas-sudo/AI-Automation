@@ -17,6 +17,7 @@ from langgraph.prebuilt import create_react_agent
 from app.agents.base_agent import BaseAgent
 from app.core.intent_router import Intent
 from app.core.prompt_builder import build_prompt
+from app.core.session_manager import SessionManager
 from app.services.whatsapp_service import IncomingMessage, WhatsAppService
 
 logger = logging.getLogger(__name__)
@@ -62,9 +63,13 @@ class ReportAgent(BaseAgent):
 
         pdf_path = None
         try:
+            # Resolve org ID: session selection > single-org auto
+            session_org = SessionManager.get_org(msg.from_number)
+            org_id = session_org["org_id"] if session_org else (mcp_manager.zoho_org_id or "")
+
             # Build agent with REPORT-scoped tools (fewer than full CRUD)
             tools = mcp_manager.registry.get_for_intent(Intent.REPORT)
-            prompt = build_prompt(Intent.REPORT, zoho_org_id=mcp_manager.zoho_org_id)
+            prompt = build_prompt(Intent.REPORT, zoho_org_id=org_id if org_id else None)
             agent = create_react_agent(model, tools, prompt=prompt)
 
             logger.info("[REPORT] Collecting data for FY %s (user %s)…", fiscal_year, msg.from_number)
@@ -76,7 +81,7 @@ class ReportAgent(BaseAgent):
             data = await asyncio.wait_for(
                 collect_report_data(
                     agent, fiscal_year,
-                    org_id=mcp_manager.zoho_org_id or "",
+                    org_id=org_id,
                     tool_registry=mcp_manager.registry,
                 ),
                 timeout=300,

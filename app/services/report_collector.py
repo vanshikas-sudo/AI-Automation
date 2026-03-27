@@ -23,30 +23,38 @@ logger = logging.getLogger(__name__)
 
 async def _call_tool(tool, params: dict) -> dict | list | None:
     """Call an MCP tool with params and return parsed JSON, or None on failure."""
+    tool_name = getattr(tool, 'name', '?')
     try:
         result = await tool.ainvoke(params)
+        logger.info("[TOOL] %s → response type=%s", tool_name, type(result).__name__)
 
         # Extract text from various response formats
         text = _extract_tool_text(result)
         if not text:
-            logger.warning("Tool %s returned empty response", getattr(tool, 'name', '?'))
+            logger.warning("[TOOL] %s returned empty response (raw=%s)", tool_name, repr(result)[:200])
             return None
+
+        logger.debug("[TOOL] %s → %d chars, starts=%s", tool_name, len(text), repr(text[:150]))
 
         # Try parsing as JSON
         try:
-            return json.loads(text)
+            parsed = json.loads(text)
+            if isinstance(parsed, dict):
+                logger.info("[TOOL] %s → parsed OK, keys=%s", tool_name, list(parsed.keys()))
+            else:
+                logger.info("[TOOL] %s → parsed OK, type=%s len=%d", tool_name, type(parsed).__name__, len(parsed) if isinstance(parsed, list) else 0)
+            return parsed
         except json.JSONDecodeError:
             # Response may be truncated — try to repair and salvage
             repaired = _repair_truncated_json(text)
             if repaired is not None:
+                logger.info("[TOOL] %s → repaired truncated JSON OK", tool_name)
                 return repaired
-            logger.warning("Tool %s: could not parse response (%d chars), start=%s, end=%s",
-                          getattr(tool, 'name', '?'), len(text),
-                          repr(text[:100]), repr(text[-100:]))
-            return None
+            logger.warning("[TOOL] %s: JSON parse failed (%d chars), start=%s, end=%s",
+                          tool_name, len(text), repr(text[:100]), repr(text[-100:]))
             return None
     except Exception as e:
-        logger.warning("Tool call failed for %s: %s", getattr(tool, 'name', '?'), e)
+        logger.warning("[TOOL] %s call failed: %s", tool_name, e, exc_info=True)
     return None
 
 
@@ -67,11 +75,23 @@ def _extract_tool_text(result) -> str | None:
                 texts.append(block.get("text", ""))
             elif isinstance(block, str):
                 texts.append(block)
-        return "\n".join(texts) if texts else None
+        if texts:
+            return "\n".join(texts)
+        # If it's a plain data list (not content blocks), serialize it
+        try:
+            return json.dumps(result)
+        except (TypeError, ValueError):
+            return None
 
-    # Dict with text key
-    if isinstance(result, dict) and "text" in result:
-        return result["text"]
+    # Dict with text key (single content block)
+    if isinstance(result, dict):
+        if "text" in result and "type" in result:
+            return result["text"]
+        # It's already structured data — serialize so json.loads can re-parse
+        try:
+            return json.dumps(result)
+        except (TypeError, ValueError):
+            return None
 
     return str(result) if result else None
 
@@ -212,6 +232,121 @@ def _build_item_revenue(invoices: list) -> dict[str, dict]:
     return dict(items)
 
 
+def _build_monthly_costs(bills: list, expenses: list, fy_start: str, fy_end: str) -> dict[str, float]:
+    """Build monthly costs from bills + expenses within the fiscal year."""
+    fy_months = ["Apr", "May", "Jun", "Jul", "Aug", "Sep",
+                 "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"]
+    monthly = {m: 0.0 for m in fy_months}
+
+    for b in bills:
+        date_str = b.get("date", "")
+        if not date_str or date_str < fy_start or date_str > fy_end:
+            continue
+        month = _month_key(date_str)
+        if month in monthly:
+            monthly[month] += float(b.get("total", 0))
+
+    for e in expenses:
+        date_str = e.get("date", "")
+        if not date_str or date_str < fy_start or date_str > fy_end:
+            continue
+        month = _month_key(date_str)
+        if month in monthly:
+            monthly[month] += float(e.get("total", e.get("amount", 0)))
+
+    return monthly
+
+
+def _build_expense_breakdown(bills: list, expenses: list) -> list[dict]:
+    """Build expense breakdown by category from bills and expenses."""
+    categories: dict[str, float] = defaultdict(float)
+
+    for b in bills:
+        # Use vendor_name as category since bills don't have expense categories
+        cat = b.get("vendor_name", "") or b.get("reference_number", "Other Bills")
+        if not cat:
+            cat = "Other Bills"
+        categories[cat] += float(b.get("total", 0))
+
+    for e in expenses:
+        cat = (e.get("category_name", "") or e.get("account_name", "")
+               or e.get("description", "Other Expenses"))
+        if not cat:
+            cat = "Other Expenses"
+        categories[cat] += float(e.get("total", e.get("amount", 0)))
+
+    if not categories:
+        return []
+
+    total = sum(categories.values())
+    breakdown = []
+    for cat, amount in sorted(categories.items(), key=lambda x: x[1], reverse=True):
+        pct = (amount / total * 100) if total > 0 else 0
+        breakdown.append({
+            "category": cat[:30],  # Truncate long names
+            "amount": amount,
+            "percentage": round(pct, 1),
+            "trend": "—",
+        })
+
+    return breakdown[:10]  # Top 10 categories
+
+
+def _build_journal_report(journals: list, fy_start: str, fy_end: str) -> dict:
+    """Build journal report data from journal entries."""
+    if not journals:
+        return {
+            "summary": "No journal entries found for this period.",
+            "total_entries": 0, "total_debit": 0, "total_credit": 0,
+            "entries": [], "monthly_totals": [],
+        }
+
+    total_debit = 0.0
+    total_credit = 0.0
+    entries = []
+    fy_months = ["Apr", "May", "Jun", "Jul", "Aug", "Sep",
+                 "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"]
+    monthly_debits = {m: 0.0 for m in fy_months}
+    monthly_credits = {m: 0.0 for m in fy_months}
+
+    for j in journals:
+        j_date = j.get("journal_date", j.get("date", ""))
+        j_number = j.get("journal_number", j.get("entry_number", ""))
+        j_debit = float(j.get("total", j.get("debit_total", 0)))
+        j_credit = float(j.get("total", j.get("credit_total", 0)))
+        j_notes = j.get("notes", j.get("reference_number", ""))
+
+        total_debit += j_debit
+        total_credit += j_credit
+
+        month = _month_key(j_date)
+        if month in monthly_debits:
+            monthly_debits[month] += j_debit
+            monthly_credits[month] += j_credit
+
+        if len(entries) < 20:
+            entries.append({
+                "date": j_date,
+                "journal_number": j_number,
+                "account": j.get("account_name", j_notes[:30] if j_notes else ""),
+                "debit": j_debit,
+                "credit": j_credit,
+                "notes": (j_notes or "")[:40],
+            })
+
+    monthly_totals = [{"month": m, "debit": monthly_debits[m], "credit": monthly_credits[m]}
+                      for m in fy_months]
+
+    return {
+        "summary": f"{len(journals)} journal entries recorded in this period.",
+        "total_entries": len(journals),
+        "total_debit": total_debit,
+        "total_credit": total_credit,
+        "entries": entries,
+        "monthly_totals": monthly_totals,
+    }
+
+
 async def collect_report_data(agent, fiscal_year: str = "2025-2026", org_id: str = "",
                              tool_registry=None) -> dict:
     """
@@ -221,7 +356,7 @@ async def collect_report_data(agent, fiscal_year: str = "2025-2026", org_id: str
     Phase 2: LLM generates insights from the structured data (small output)
     """
     import asyncio
-    logger.info("[COLLECTOR] Starting direct data collection for FY %s", fiscal_year)
+    logger.info("[COLLECTOR] Starting direct data collection for FY %s (org=%s)", fiscal_year, org_id)
 
     fy_start, fy_end = _parse_fy_range(fiscal_year)
     qp = {"query_params": {"organization_id": org_id, "per_page": 200}}
@@ -240,6 +375,9 @@ async def collect_report_data(agent, fiscal_year: str = "2025-2026", org_id: str
                 tool_map[t.name] = t
         except Exception:
             pass
+
+    logger.info("[COLLECTOR] Available tools (%d): %s", len(tool_map), list(tool_map.keys()))
+
     if not tool_map:
         logger.warning("[COLLECTOR] No tools available, using agent fallback")
         return await _collect_via_agent(agent, fiscal_year, org_id)
@@ -252,6 +390,8 @@ async def collect_report_data(agent, fiscal_year: str = "2025-2026", org_id: str
         "bills": "ZohoBooks_list_bills",
         "sales_orders": "ZohoBooks_list_sales_orders",
         "vendor_payments": "ZohoBooks_list_vendor_payments",
+        "expenses": "ZohoBooks_list_expenses",
+        "journals": "ZohoBooks_list_journals",
     }
 
     for key, tool_name in tool_names.items():
@@ -260,7 +400,7 @@ async def collect_report_data(agent, fiscal_year: str = "2025-2026", org_id: str
             params = qp if key == "invoices" else qp_basic
             tasks[key] = asyncio.create_task(_call_tool(tool, params))
         else:
-            logger.warning("[COLLECTOR] Tool %s not found", tool_name)
+            logger.warning("[COLLECTOR] Tool %s not found in tool_map", tool_name)
 
     # get_organization needs path_params for org ID
     org_tool = tool_map.get("ZohoBooks_get_organization")
@@ -279,6 +419,15 @@ async def collect_report_data(agent, fiscal_year: str = "2025-2026", org_id: str
             logger.warning("[COLLECTOR] Timeout fetching %s", key)
             results[key] = None
 
+    # Log what we got back
+    for key, val in results.items():
+        if val is None:
+            logger.warning("[COLLECTOR] %s → None (failed)", key)
+        elif isinstance(val, dict):
+            logger.info("[COLLECTOR] %s → dict keys=%s", key, list(val.keys()))
+        else:
+            logger.info("[COLLECTOR] %s → %s", key, type(val).__name__)
+
     # ── Phase 2: Structure the data in Python ────────────────────────
 
     invoices_data = results.get("invoices") or {}
@@ -287,6 +436,10 @@ async def collect_report_data(agent, fiscal_year: str = "2025-2026", org_id: str
     items = items_data.get("items", [])
     bills_data = results.get("bills") or {}
     bills = bills_data.get("bills", [])
+    expenses_data = results.get("expenses") or {}
+    expenses = expenses_data.get("expenses", [])
+    journals_data = results.get("journals") or {}
+    journals = journals_data.get("journals", [])
     org_data = results.get("org") or {}
     org_name = org_data.get("organization", {}).get("name", "Organization")
 
@@ -296,44 +449,76 @@ async def collect_report_data(agent, fiscal_year: str = "2025-2026", org_id: str
     if not fy_invoices:
         fy_invoices = invoices  # Use all if none match the date range
 
-    logger.info("[COLLECTOR] Raw data: %d invoices (%d in FY), %d items, %d bills",
-                len(invoices), len(fy_invoices), len(items), len(bills))
+    # Filter bills to fiscal year
+    fy_bills = [b for b in bills
+                if fy_start <= b.get("date", "")[:10] <= fy_end]
+    if not fy_bills:
+        fy_bills = bills
+
+    # Filter expenses to fiscal year
+    fy_expenses = [e for e in expenses
+                   if fy_start <= e.get("date", "")[:10] <= fy_end]
+    if not fy_expenses:
+        fy_expenses = expenses
+
+    # Filter journals to fiscal year
+    fy_journals = [j for j in journals
+                   if fy_start <= j.get("journal_date", j.get("date", ""))[:10] <= fy_end]
+    if not fy_journals:
+        fy_journals = journals
+
+    logger.info("[COLLECTOR] Raw data: %d invoices (%d in FY), %d items, %d bills (%d in FY), "
+                "%d expenses (%d in FY), %d journals (%d in FY)",
+                len(invoices), len(fy_invoices), len(items),
+                len(bills), len(fy_bills),
+                len(expenses), len(fy_expenses),
+                len(journals), len(fy_journals))
 
     # Compute financials
     total_sales = sum(float(inv.get("total", 0)) for inv in fy_invoices)
-    total_bills = sum(float(b.get("total", 0)) for b in bills)
+    total_bills = sum(float(b.get("total", 0)) for b in fy_bills)
+    total_expense_amount = sum(float(e.get("total", e.get("amount", 0))) for e in fy_expenses)
+    total_all_expenses = total_bills + total_expense_amount
     total_outstanding_ar = sum(float(inv.get("balance", 0)) for inv in fy_invoices)
-    total_outstanding_ap = sum(float(b.get("balance", 0)) for b in bills)
+    total_outstanding_ap = sum(float(b.get("balance", 0)) for b in fy_bills)
     overdue_ar = sum(float(inv.get("balance", 0)) for inv in fy_invoices
                      if inv.get("status") == "overdue")
-    overdue_ap = sum(float(b.get("balance", 0)) for b in bills
+    overdue_ap = sum(float(b.get("balance", 0)) for b in fy_bills
                      if b.get("status") == "overdue")
 
-    gross_profit = total_sales - total_bills
+    gross_profit = total_sales - total_all_expenses
     net_income = gross_profit
+
+    logger.info("[COLLECTOR] Financials: sales=%.2f, bills=%.2f, expenses=%.2f, "
+                "gross_profit=%.2f, AR=%.2f, AP=%.2f",
+                total_sales, total_bills, total_expense_amount,
+                gross_profit, total_outstanding_ar, total_outstanding_ap)
 
     # Monthly sales
     monthly_sales = _build_monthly_sales(fy_invoices, fy_start, fy_end)
 
+    # Monthly costs (from bills + expenses)
+    monthly_costs = _build_monthly_costs(fy_bills, fy_expenses, fy_start, fy_end)
+
     # Item revenue analysis — use items catalog since list_invoices
     # doesn't include line_items (would need get_invoice per invoice)
-    sorted_items = sorted(items, key=lambda x: float(x.get("rate", 0)), reverse=True)
-    top_5 = [{"name": it.get("name", "Unknown"), "revenue": float(it.get("rate", 0)),
-              "quantity": float(it.get("stock_on_hand", 0)),
-              "margin": float(it.get("rate", 0)) - float(it.get("purchase_rate", 0))}
+    sorted_items = sorted(items, key=lambda x: float(x.get("rate", 0) or 0), reverse=True)
+    top_5 = [{"name": it.get("name", "Unknown"), "revenue": float(it.get("rate", 0) or 0),
+              "quantity": float(it.get("stock_on_hand", 0) or 0),
+              "margin": float(it.get("rate", 0) or 0) - float(it.get("purchase_rate", 0) or 0)}
              for it in sorted_items[:5]]
-    least_5 = [{"name": it.get("name", "Unknown"), "revenue": float(it.get("rate", 0)),
-                "quantity": float(it.get("stock_on_hand", 0)),
-                "margin": float(it.get("rate", 0)) - float(it.get("purchase_rate", 0))}
+    least_5 = [{"name": it.get("name", "Unknown"), "revenue": float(it.get("rate", 0) or 0),
+                "quantity": float(it.get("stock_on_hand", 0) or 0),
+                "margin": float(it.get("rate", 0) or 0) - float(it.get("purchase_rate", 0) or 0)}
                for it in sorted_items[-5:]] if len(sorted_items) >= 5 else []
 
     top_item = {}
     if sorted_items:
         it = sorted_items[0]
         top_item = {"name": it.get("name", "Unknown"),
-                    "revenue": float(it.get("rate", 0)),
-                    "quantity_sold": float(it.get("stock_on_hand", 0)),
-                    "margin": float(it.get("rate", 0)) - float(it.get("purchase_rate", 0))}
+                    "revenue": float(it.get("rate", 0) or 0),
+                    "quantity_sold": float(it.get("stock_on_hand", 0) or 0),
+                    "margin": float(it.get("rate", 0) or 0) - float(it.get("purchase_rate", 0) or 0)}
 
     # Sales breakdown by invoice (since we don't have line items)
     sales_breakdown = []
@@ -375,11 +560,18 @@ async def collect_report_data(agent, fiscal_year: str = "2025-2026", org_id: str
     # Aging
     aging = _build_aging(fy_invoices)
 
-    # Monthly gross profit
+    # Monthly gross profit (revenue from sales, cost from bills+expenses)
     fy_months = ["Apr", "May", "Jun", "Jul", "Aug", "Sep",
                  "Oct", "Nov", "Dec", "Jan", "Feb", "Mar"]
-    monthly_gp = [{"month": m, "revenue": ms["amount"], "cost": 0}
+    monthly_gp = [{"month": m, "revenue": ms["amount"],
+                   "cost": monthly_costs.get(m, 0.0)}
                   for m, ms in zip(fy_months, monthly_sales)]
+
+    # Expense breakdown from bills + expenses
+    expense_breakdown = _build_expense_breakdown(fy_bills, fy_expenses)
+
+    # Journal report
+    journal_report = _build_journal_report(fy_journals, fy_start, fy_end)
 
     # ── Phase 3: Use LLM for insights only (small output) ───────────
 
@@ -427,7 +619,7 @@ async def collect_report_data(agent, fiscal_year: str = "2025-2026", org_id: str
         "organization_name": org_name,
         "total_sales": total_sales,
         "gross_profit": gross_profit,
-        "total_expenses": total_bills,
+        "total_expenses": total_all_expenses,
         "net_income": net_income,
         "sales_summary": {"description": sales_description},
         "monthly_sales": monthly_sales,
@@ -435,7 +627,7 @@ async def collect_report_data(agent, fiscal_year: str = "2025-2026", org_id: str
         "top_item": top_item,
         "gross_profit_details": {
             "total_revenue": total_sales,
-            "cost_of_goods": total_bills,
+            "cost_of_goods": total_all_expenses,
             "gross_profit": gross_profit,
             "margin_pct": round((gross_profit / total_sales * 100) if total_sales > 0 else 0, 1),
         },
@@ -456,12 +648,8 @@ async def collect_report_data(agent, fiscal_year: str = "2025-2026", org_id: str
             "details": ap_details,
         },
         "regional_data": [],
-        "expense_breakdown": [],
-        "journal_report": {
-            "summary": "Data collected from Zoho Books",
-            "total_entries": 0, "total_debit": 0, "total_credit": 0,
-            "entries": [], "monthly_totals": [],
-        },
+        "expense_breakdown": expense_breakdown,
+        "journal_report": journal_report,
         "strategic_insights": insights if insights else [
             f"Total revenue of {total_sales:,.2f} recorded for FY {fiscal_year}.",
             f"Gross profit margin of {round((gross_profit / total_sales * 100) if total_sales > 0 else 0, 1)}%.",
@@ -472,8 +660,9 @@ async def collect_report_data(agent, fiscal_year: str = "2025-2026", org_id: str
 
     logger.info(
         "[COLLECTOR] Report data assembled for FY %s — "
-        "sales=%.2f, expenses=%.2f, invoices=%d, bills=%d",
-        fiscal_year, total_sales, total_bills, len(fy_invoices), len(bills),
+        "sales=%.2f, expenses=%.2f, invoices=%d, bills=%d, expenses_items=%d, journals=%d",
+        fiscal_year, total_sales, total_all_expenses,
+        len(fy_invoices), len(fy_bills), len(fy_expenses), len(fy_journals),
     )
     return report_data
 
