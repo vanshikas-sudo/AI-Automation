@@ -22,15 +22,70 @@ from app.services.whatsapp_service import IncomingMessage, WhatsAppService
 
 logger = logging.getLogger(__name__)
 
+# Key used in SessionManager to remember a pending report request
+_PENDING_REPORT_KEY = "__pending_report_fy"
+
 
 class ReportAgent(BaseAgent):
     """Collects Zoho data, generates PDF, sends via WhatsApp."""
 
     name = "report"
 
+    # ── Org resolution (mirrors ZohoCrudAgent logic) ─────────
+
+    @staticmethod
+    def _resolve_org_id(phone: str, mcp_manager) -> str | None:
+        """Get org ID: session selection > single-org auto > None."""
+        org = SessionManager.get_org(phone)
+        if org:
+            return org["org_id"]
+        if mcp_manager.zoho_org_id:
+            return mcp_manager.zoho_org_id
+        return None
+
+    @staticmethod
+    def _try_capture_org_selection(phone: str, user_text: str, mcp_manager) -> bool:
+        """If the user's message matches an org name, save it. Returns True if captured."""
+        if SessionManager.has_org(phone):
+            return False
+        if len(mcp_manager.zoho_organizations) <= 1:
+            return False
+        org_id = mcp_manager.get_org_id_by_name(user_text)
+        if org_id:
+            for org in mcp_manager.zoho_organizations:
+                if str(org["organization_id"]) == org_id:
+                    SessionManager.set_org(phone, org_id, org["name"])
+                    logger.info("[REPORT] User %s selected org: %s (%s)",
+                                phone, org["name"], org_id)
+                    return True
+        return False
+
+    @classmethod
+    def set_pending_report(cls, phone: str, fiscal_year: str) -> None:
+        """Remember that this user has a pending report waiting for org selection."""
+        SessionManager.add_assistant_message(phone, f"{_PENDING_REPORT_KEY}:{fiscal_year}")
+
+    @classmethod
+    def get_pending_report(cls, phone: str) -> str | None:
+        """Check if user has a pending report. Returns fiscal_year or None."""
+        for item in reversed(SessionManager.get_history(phone)):
+            if item["role"] == "assistant" and item["content"].startswith(_PENDING_REPORT_KEY):
+                return item["content"].split(":", 1)[1]
+        return None
+
+    @classmethod
+    def clear_pending_report(cls, phone: str) -> None:
+        """Remove the pending report marker from session."""
+        history = SessionManager.get_history(phone)
+        SessionManager._sessions[phone] = [
+            h for h in history
+            if not (h["role"] == "assistant" and h["content"].startswith(_PENDING_REPORT_KEY))
+        ]
+
     async def run(self, msg: IncomingMessage, app_state, **kwargs) -> str:
         """
         Full report flow:
+          0. Check org — if not resolved, ask user to select one first
           1. Send "generating..." notice
           2. Build agent with REPORT tool subset
           3. Collect data via report_collector
@@ -51,6 +106,45 @@ class ReportAgent(BaseAgent):
         except Exception:
             logger.warning("Could not mark message %s as read", msg.message_id, exc_info=True)
 
+        # ── Step 0: Ensure org is resolved ───────────────────
+        # Try to capture org selection from user's reply
+        self._try_capture_org_selection(msg.from_number, msg.text, mcp_manager)
+
+        org_id = self._resolve_org_id(msg.from_number, mcp_manager)
+
+        if not org_id:
+            # Multiple orgs exist, none selected — ask user to pick
+            if len(mcp_manager.zoho_organizations) > 1:
+                org_names = [org["name"] for org in mcp_manager.zoho_organizations]
+                org_list = "\n".join(f"  {i+1}. {name}" for i, name in enumerate(org_names))
+                self.set_pending_report(msg.from_number, fiscal_year)
+                await wa.send_text_message(
+                    to=msg.from_number,
+                    body=(
+                        f"📊 I'd like to generate your FY {fiscal_year} report, "
+                        f"but I need to know which organization to use.\n\n"
+                        f"Please reply with the organization name:\n{org_list}"
+                    ),
+                )
+                logger.info("[REPORT] Asked user %s to select org (FY %s)",
+                            msg.from_number, fiscal_year)
+                return ""
+            else:
+                # No orgs found at all — error
+                logger.error("[REPORT] No Zoho organizations available")
+                await wa.send_text_message(
+                    to=msg.from_number,
+                    body="Sorry, no Zoho organizations are configured. "
+                         "Please check the server setup.",
+                )
+                return ""
+
+        # Clear any pending report marker now that we have an org
+        self.clear_pending_report(msg.from_number)
+
+        logger.info("[REPORT] Using org_id=%s for user %s FY %s",
+                    org_id, msg.from_number, fiscal_year)
+
         # Send "generating" notice
         try:
             await wa.send_text_message(
@@ -63,16 +157,13 @@ class ReportAgent(BaseAgent):
 
         pdf_path = None
         try:
-            # Resolve org ID: session selection > single-org auto
-            session_org = SessionManager.get_org(msg.from_number)
-            org_id = session_org["org_id"] if session_org else (mcp_manager.zoho_org_id or "")
-
             # Build agent with REPORT-scoped tools (fewer than full CRUD)
             tools = mcp_manager.registry.get_for_intent(Intent.REPORT)
-            prompt = build_prompt(Intent.REPORT, zoho_org_id=org_id if org_id else None)
+            prompt = build_prompt(Intent.REPORT, zoho_org_id=org_id)
             agent = create_react_agent(model, tools, prompt=prompt)
 
-            logger.info("[REPORT] Collecting data for FY %s (user %s)…", fiscal_year, msg.from_number)
+            logger.info("[REPORT] Collecting data for FY %s (user %s, org %s)…",
+                        fiscal_year, msg.from_number, org_id)
 
             # Reuse existing collector logic
             from app.services.report_collector import collect_report_data
@@ -86,7 +177,15 @@ class ReportAgent(BaseAgent):
                 ),
                 timeout=300,
             )
-            logger.info("[REPORT] Data collected, generating PDF…")
+
+            # Sanity check: did we actually get data?
+            total_sales = data.get("total_sales", 0)
+            total_invoices = len(data.get("monthly_sales", []))
+            logger.info("[REPORT] Data collected — total_sales=%.2f, monthly_entries=%d",
+                        total_sales, total_invoices)
+
+            if total_sales == 0 and not data.get("sales_breakdown"):
+                logger.warning("[REPORT] All data is zero — org_id may be wrong or no data in Zoho")
 
             pdf_path = generate_fiscal_report_pdf(data)
             logger.info("[REPORT] PDF generated at %s, sending…", pdf_path)

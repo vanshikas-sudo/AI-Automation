@@ -28,3 +28,7 @@ Thumbs.db
 # Generated reports
 *.pdf
 agent_error.log
+
+# Test files
+test_mcp.py
+test_chart_visibility.py

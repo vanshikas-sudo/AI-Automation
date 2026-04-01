@@ -1,17 +1,176 @@
-2026-03-27 09:07:46,510 INFO [app.providers.llm_factory] Creating LLM: provider=azure, model=gpt-4o
-2026-03-27 09:07:51,380 INFO [app.mcp.client] MCP connect attempt 1/5 (streamable_http) to https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23a
-2026-03-27 09:07:53,468 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
-2026-03-27 09:07:53,483 INFO [mcp.client.streamable_http] Negotiated protocol version: 2025-11-25
-2026-03-27 09:07:53,818 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 202 "
-2026-03-27 09:07:55,238 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
-2026-03-27 09:07:55,252 INFO [app.mcp.client] MCP connected (streamable_http) — 32 raw tools available
-2026-03-27 09:07:55,254 INFO [app.mcp.tool_registry] ToolRegistry: received 32 raw tools, sample names: ['ZohoBooks_list_chart_of_account_transactions', 'ZohoBooks_list_bill_payments', 'ZohoBooks_list_invoice_comments', 'ZohoBooks_list_bills', 'ZohoBooks_list_sales_orders', 'ZohoBooks_list_vendor_payments', 'ZohoBooks_list_items', 'ZohoBooks_list_chart_of_accounts']
-2026-03-27 09:07:55,255 INFO [app.mcp.tool_registry] ToolRegistry: kept 27/32 tools — ['ZohoBooks_create_invoice', 'ZohoBooks_get_bill', 'ZohoBooks_get_chart_of_account', 'ZohoBooks_get_contact', 'ZohoBooks_get_contact_address', 'ZohoBooks_get_contact_person', 'ZohoBooks_get_customer_payment', 'ZohoBooks_get_fixed_asset', 'ZohoBooks_get_invoice', 'ZohoBooks_get_item']
-2026-03-27 09:07:55,256 INFO [app.mcp.manager] Auto-fetching Zoho organizations…
-2026-03-27 09:07:56,985 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
-2026-03-27 09:07:56,987 INFO [mcp.client.streamable_http] Negotiated protocol version: 2025-11-25
-2026-03-27 09:07:57,307 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 202 "
-2026-03-27 09:07:58,434 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
-2026-03-27 09:07:58,771 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
-2026-03-27 09:07:58,783 INFO [app.mcp.manager] Found 3 Zoho org(s): ['Live Box Demo', 'S Sales', 'S Salon']
-2026-03-27 09:07:58,783 INFO [app.main] MCP initialized successfully with 27 tools
+2026-03-27 18:38:14,933 INFO [app.providers.llm_factory] Creating LLM: provider=azure, model=gpt-4o
+2026-03-27 18:38:22,216 INFO [app.mcp.client] MCP connect attempt 1/5 (streamable_http) to https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23a
+2026-03-27 18:38:24,188 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:38:24,192 INFO [mcp.client.streamable_http] Negotiated protocol version: 2025-11-25
+2026-03-27 18:38:24,477 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 202 "
+2026-03-27 18:38:25,288 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:38:25,320 INFO [app.mcp.client] MCP connected (streamable_http) — 32 raw tools available
+2026-03-27 18:38:25,322 INFO [app.mcp.tool_registry] ToolRegistry: kept 27/32 tools
+2026-03-27 18:38:25,323 INFO [app.mcp.manager] Auto-fetching Zoho organizations…
+2026-03-27 18:38:26,916 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:38:26,935 INFO [mcp.client.streamable_http] Negotiated protocol version: 2025-11-25
+2026-03-27 18:38:27,217 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 202 "
+2026-03-27 18:38:28,432 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:38:28,732 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:38:28,750 INFO [app.mcp.manager] Found 3 Zoho org(s): ['Live Box Demo', 'S Sales', 'S Salon']
+2026-03-27 18:38:28,756 INFO [app.main] MCP initialized successfully with 27 tools
+2026-03-27 18:38:42,041 INFO [app.routes.webhook] Webhook POST received (482 bytes)
+2026-03-27 18:38:42,042 INFO [app.routes.webhook] Received from 918962533069 (Vanshika Saraf): hello
+2026-03-27 18:38:42,043 INFO [app.core.message_handler] [MSG] Processing from 918962533069: hello
+2026-03-27 18:38:42,044 INFO [app.core.message_handler] [MSG] Intent: chat
+2026-03-27 18:38:42,892 INFO [httpx] HTTP Request: POST https://graph.facebook.com/v21.0/964880710037524/messages "HTTP/1.1 200 OK"
+2026-03-27 18:38:45,038 INFO [httpx] HTTP Request: POST https://baarilabs.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-12-01-preview "HTTP/1.1 200 OK"
+2026-03-27 18:38:45,972 INFO [httpx] HTTP Request: POST https://graph.facebook.com/v21.0/964880710037524/messages "HTTP/1.1 200 OK"
+2026-03-27 18:38:45,973 INFO [app.services.whatsapp_service] Message sent to 918962533069, id=wamid.HBgMOTE4OTYyNTMzMDY5FQIAERgSRDgwNTVCMEMwNjM3RTJERTgzAA==
+2026-03-27 18:38:45,974 INFO [app.core.message_handler] [MSG] Reply sent to 918962533069: Hi there! 😊  
+How can I assist you today?
+2026-03-27 18:38:47,540 INFO [app.routes.webhook] Webhook POST received (493 bytes)
+2026-03-27 18:38:47,540 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 18:38:47,694 INFO [app.routes.webhook] Webhook POST received (498 bytes)
+2026-03-27 18:38:47,694 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 18:38:47,826 INFO [app.routes.webhook] Webhook POST received (493 bytes)
+2026-03-27 18:38:47,827 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 18:38:54,503 INFO [app.routes.webhook] Webhook POST received (491 bytes)
+2026-03-27 18:38:54,504 INFO [app.routes.webhook] Received from 918962533069 (Vanshika Saraf): generte report
+2026-03-27 18:38:54,505 INFO [app.core.message_handler] [MSG] Processing from 918962533069: generte report
+2026-03-27 18:38:54,506 INFO [app.core.message_handler] [MSG] Intent: chat
+2026-03-27 18:38:54,969 INFO [httpx] HTTP Request: POST https://graph.facebook.com/v21.0/964880710037524/messages "HTTP/1.1 200 OK"
+2026-03-27 18:38:57,233 INFO [httpx] HTTP Request: POST https://baarilabs.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-12-01-preview "HTTP/1.1 200 OK"
+2026-03-27 18:38:57,911 INFO [httpx] HTTP Request: POST https://graph.facebook.com/v21.0/964880710037524/messages "HTTP/1.1 200 OK"
+2026-03-27 18:38:57,915 INFO [app.services.whatsapp_service] Message sent to 918962533069, id=wamid.HBgMOTE4OTYyNTMzMDY5FQIAERgSQjREMTdBMDExMDAyRkQ2NUE1AA==
+2026-03-27 18:38:57,917 INFO [app.core.message_handler] [MSG] Reply sent to 918962533069: Sure! What type of report would you like to generate?  
+
+Examples:  
+- Sales rep
+2026-03-27 18:38:59,779 INFO [app.routes.webhook] Webhook POST received (493 bytes)
+2026-03-27 18:38:59,780 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 18:39:18,546 INFO [app.routes.webhook] Webhook POST received (504 bytes)
+2026-03-27 18:39:18,548 INFO [app.routes.webhook] Received from 918962533069 (Vanshika Saraf): fiscal report of march 2026
+2026-03-27 18:39:18,552 INFO [app.core.message_handler] [MSG] Processing from 918962533069: fiscal report of march 2026
+2026-03-27 18:39:18,554 INFO [app.core.message_handler] [MSG] Intent: report
+2026-03-27 18:39:18,557 INFO [app.core.message_handler] [MSG] Report request: FY 2026-2027
+2026-03-27 18:39:19,096 INFO [httpx] HTTP Request: POST https://graph.facebook.com/v21.0/964880710037524/messages "HTTP/1.1 200 OK"
+2026-03-27 18:39:19,723 INFO [httpx] HTTP Request: POST https://graph.facebook.com/v21.0/964880710037524/messages "HTTP/1.1 200 OK"
+2026-03-27 18:39:19,725 INFO [app.services.whatsapp_service] Message sent to 918962533069, id=wamid.HBgMOTE4OTYyNTMzMDY5FQIAERgSMjEzNUNFODBDMzMxQ0ZCRDI4AA==
+2026-03-27 18:39:19,725 INFO [app.agents.report_agent] [REPORT] Asked user 918962533069 to select org (FY 2026-2027)
+2026-03-27 18:39:20,892 INFO [app.routes.webhook] Webhook POST received (493 bytes)
+2026-03-27 18:39:20,896 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 18:39:21,390 INFO [app.routes.webhook] Webhook POST received (498 bytes)
+2026-03-27 18:39:21,392 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 18:39:21,822 INFO [app.routes.webhook] Webhook POST received (493 bytes)
+2026-03-27 18:39:21,823 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 18:39:50,647 INFO [app.routes.webhook] Webhook POST received (498 bytes)
+2026-03-27 18:39:50,648 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 18:40:16,416 INFO [app.routes.webhook] Webhook POST received (493 bytes)
+2026-03-27 18:40:16,417 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 18:42:17,208 INFO [app.routes.webhook] Webhook POST received (484 bytes)
+2026-03-27 18:42:17,209 INFO [app.routes.webhook] Received from 918962533069 (Vanshika Saraf): S Sales
+2026-03-27 18:42:17,213 INFO [app.core.message_handler] [MSG] Processing from 918962533069: S Sales
+2026-03-27 18:42:17,215 INFO [app.core.message_handler] [MSG] Org selected for pending report: S Sales (915780702)
+2026-03-27 18:42:17,219 INFO [app.core.message_handler] [MSG] Resuming pending report for FY 2026-2027
+2026-03-27 18:42:18,269 INFO [httpx] HTTP Request: POST https://graph.facebook.com/v21.0/964880710037524/messages "HTTP/1.1 200 OK"
+2026-03-27 18:42:18,272 INFO [app.agents.report_agent] [REPORT] Using org_id=915780702 for user 918962533069 FY 2026-2027
+2026-03-27 18:42:19,060 INFO [httpx] HTTP Request: POST https://graph.facebook.com/v21.0/964880710037524/messages "HTTP/1.1 200 OK"
+2026-03-27 18:42:19,064 INFO [app.services.whatsapp_service] Message sent to 918962533069, id=wamid.HBgMOTE4OTYyNTMzMDY5FQIAERgSQkQ4NjlDQkM0NjIzMkFBNzA1AA==
+2026-03-27 18:42:19,154 INFO [app.agents.report_agent] [REPORT] Collecting data for FY 2026-2027 (user 918962533069, org 915780702)…
+2026-03-27 18:42:24,757 INFO [app.services.report_collector] [COLLECTOR] Starting direct data collection for FY 2026-2027 (org=915780702)
+2026-03-27 18:42:24,758 INFO [app.services.report_collector] [COLLECTOR] Available tools (27): ['ZohoBooks_list_chart_of_account_transactions', 'ZohoBooks_list_bill_payments', 'ZohoBooks_list_invoice_comments', 'ZohoBooks_list_bills', 'ZohoBooks_list_sales_orders', 'ZohoBooks_list_vendor_payments', 'ZohoBooks_list_items', 'ZohoBooks_list_chart_of_accounts', 'ZohoBooks_get_bill', 'ZohoBooks_get_chart_of_account', 'ZohoBooks_list_project_invoices', 'ZohoBooks_get_item', 'ZohoBooks_get_fixed_asset', 'ZohoBooks_list_invoices', 'ZohoBooks_get_sales_receipt', 'ZohoBooks_list_locations', 'ZohoBooks_get_organization', 'ZohoBooks_create_invoice', 'ZohoBooks_list_organizations', 'ZohoBooks_get_invoice', 'ZohoBooks_get_opening_balance', 'ZohoBooks_get_contact_person', 'ZohoBooks_get_customer_payment', 'ZohoBooks_get_contact_address', 'ZohoBooks_get_contact', 'ZohoBooks_list_contacts', 'ZohoBooks_list_contact_persons']
+2026-03-27 18:42:24,762 WARNING [app.services.report_collector] [COLLECTOR] Tool ZohoBooks_list_expenses not found in tool_map
+2026-03-27 18:42:24,763 WARNING [app.services.report_collector] [COLLECTOR] Tool ZohoBooks_list_journals not found in tool_map
+2026-03-27 18:42:30,591 INFO [app.routes.webhook] Webhook POST received (493 bytes)
+2026-03-27 18:42:30,592 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 18:42:30,594 INFO [app.routes.webhook] Webhook POST received (493 bytes)
+2026-03-27 18:42:30,594 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 18:42:30,596 INFO [app.routes.webhook] Webhook POST received (498 bytes)
+2026-03-27 18:42:30,597 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 18:42:31,465 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:42:31,466 INFO [mcp.client.streamable_http] Negotiated protocol version: 2025-11-25
+2026-03-27 18:42:31,516 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:42:31,518 INFO [mcp.client.streamable_http] Negotiated protocol version: 2025-11-25
+2026-03-27 18:42:31,520 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:42:31,524 INFO [mcp.client.streamable_http] Negotiated protocol version: 2025-11-25
+2026-03-27 18:42:31,554 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:42:31,558 INFO [mcp.client.streamable_http] Negotiated protocol version: 2025-11-25
+2026-03-27 18:42:31,560 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:42:31,563 INFO [mcp.client.streamable_http] Negotiated protocol version: 2025-11-25
+2026-03-27 18:42:31,566 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:42:31,571 INFO [mcp.client.streamable_http] Negotiated protocol version: 2025-11-25
+2026-03-27 18:42:31,731 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 202 "
+2026-03-27 18:42:31,804 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 202 "
+2026-03-27 18:42:31,811 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 202 "
+2026-03-27 18:42:31,868 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 202 "
+2026-03-27 18:42:31,880 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 202 "
+2026-03-27 18:42:31,882 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 202 "
+2026-03-27 18:42:32,816 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:42:32,915 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:42:32,917 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:42:32,955 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:42:33,085 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:42:33,128 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:42:33,153 INFO [app.services.report_collector] [TOOL] ZohoBooks_list_sales_orders → response type=list
+2026-03-27 18:42:33,154 INFO [app.services.report_collector] [TOOL] ZohoBooks_list_sales_orders → parsed OK, keys=['code', 'message', 'salesorders', 'page_context']
+2026-03-27 18:42:33,222 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:42:33,242 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:42:33,267 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:42:33,292 INFO [app.services.report_collector] [TOOL] ZohoBooks_get_organization → response type=list
+2026-03-27 18:42:33,292 WARNING [app.services.report_collector] [TOOL] ZohoBooks_get_organization: JSON parse failed (67 chars), start='Mandatory path variable organization_id is not present in tool body', end='Mandatory path variable organization_id is not present in tool body'
+2026-03-27 18:42:33,296 INFO [app.services.report_collector] [TOOL] ZohoBooks_list_bills → response type=list
+2026-03-27 18:42:33,296 INFO [app.services.report_collector] [TOOL] ZohoBooks_list_bills → parsed OK, keys=['code', 'message', 'bills', 'page_context']
+2026-03-27 18:42:33,297 INFO [app.services.report_collector] [TOOL] ZohoBooks_list_vendor_payments → response type=list
+2026-03-27 18:42:33,298 INFO [app.services.report_collector] [TOOL] ZohoBooks_list_vendor_payments → parsed OK, keys=['code', 'message', 'vendorpayments', 'page_context']
+2026-03-27 18:42:33,362 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:42:33,365 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:42:33,377 INFO [app.services.report_collector] [TOOL] ZohoBooks_list_items → response type=list
+2026-03-27 18:42:33,378 INFO [app.services.report_collector] [TOOL] ZohoBooks_list_items → parsed OK, keys=['code', 'message', 'items', 'page_context']
+2026-03-27 18:42:33,652 INFO [httpx] HTTP Request: POST https://crm-automation-01-915795771.zohomcp.com/mcp/840c616fcbfa2e9bf190a681e23afd8e/message "HTTP/1.1 200 "
+2026-03-27 18:42:33,683 INFO [app.services.report_collector] [TOOL] ZohoBooks_list_invoices → response type=list
+2026-03-27 18:42:33,690 INFO [app.services.report_collector] [TOOL] ZohoBooks_list_invoices → repaired truncated JSON OK
+2026-03-27 18:42:33,691 INFO [app.services.report_collector] [COLLECTOR] invoices → dict keys=['code', 'message', 'invoices']
+2026-03-27 18:42:33,692 INFO [app.services.report_collector] [COLLECTOR] items → dict keys=['code', 'message', 'items', 'page_context']
+2026-03-27 18:42:33,693 INFO [app.services.report_collector] [COLLECTOR] bills → dict keys=['code', 'message', 'bills', 'page_context']
+2026-03-27 18:42:33,694 INFO [app.services.report_collector] [COLLECTOR] sales_orders → dict keys=['code', 'message', 'salesorders', 'page_context']
+2026-03-27 18:42:33,695 INFO [app.services.report_collector] [COLLECTOR] vendor_payments → dict keys=['code', 'message', 'vendorpayments', 'page_context']
+2026-03-27 18:42:33,696 WARNING [app.services.report_collector] [COLLECTOR] org → None (failed)
+2026-03-27 18:42:33,697 INFO [app.services.report_collector] [COLLECTOR] Raw data: 11 invoices (11 in FY), 6 items, 6 bills (6 in FY), 0 expenses (0 in FY), 0 journals (0 in FY)
+2026-03-27 18:42:33,699 INFO [app.services.report_collector] [COLLECTOR] Financials: sales=9372000.00, bills=656000.00, expenses=0.00, gross_profit=8716000.00, AR=7817000.00, AP=427500.00
+2026-03-27 18:42:40,797 INFO [httpx] HTTP Request: POST https://baarilabs.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-12-01-preview "HTTP/1.1 200 OK"
+2026-03-27 18:42:41,031 INFO [app.services.report_collector] [COLLECTOR] Report data assembled for FY 2026-2027 — sales=9372000.00, expenses=656000.00, invoices=11, bills=6, expenses_items=0, journals=0
+2026-03-27 18:42:41,034 INFO [app.agents.report_agent] [REPORT] Data collected — total_sales=9372000.00, monthly_entries=12
+2026-03-27 18:42:42,180 INFO [app.services.pdf_report_service] PDF report generated: C:\Users\pc\AppData\Local\Temp\fiscal_reports\Fiscal_Report_2026-2027_20260327_184241.pdf
+2026-03-27 18:42:42,181 INFO [app.agents.report_agent] [REPORT] PDF generated at C:\Users\pc\AppData\Local\Temp\fiscal_reports\Fiscal_Report_2026-2027_20260327_184241.pdf, sending…
+2026-03-27 18:42:42,182 INFO [app.services.whatsapp_service] Uploading document Fiscal_Report_2026-2027.pdf (130 KB) to WhatsApp…
+2026-03-27 18:42:43,529 INFO [httpx] HTTP Request: POST https://graph.facebook.com/v21.0/964880710037524/media "HTTP/1.1 200 OK"
+2026-03-27 18:42:43,566 INFO [app.services.whatsapp_service] Media uploaded, id=1480538150080165
+2026-03-27 18:42:45,024 INFO [httpx] HTTP Request: POST https://graph.facebook.com/v21.0/964880710037524/messages "HTTP/1.1 200 OK"
+2026-03-27 18:42:45,027 INFO [app.services.whatsapp_service] Document sent to 918962533069, id=wamid.HBgMOTE4OTYyNTMzMDY5FQIAERgSNTc5MTU1RkY3NkI1QURFOEY2AA==
+2026-03-27 18:42:45,029 INFO [app.agents.report_agent] [REPORT] Sent to 918962533069 for FY 2026-2027
+2026-03-27 18:42:46,632 INFO [app.routes.webhook] Webhook POST received (493 bytes)
+2026-03-27 18:42:46,633 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 18:42:47,454 INFO [app.routes.webhook] Webhook POST received (493 bytes)
+2026-03-27 18:42:47,484 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 18:43:12,734 INFO [app.routes.webhook] Webhook POST received (498 bytes)
+2026-03-27 18:43:12,736 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 19:07:55,848 INFO [app.routes.webhook] Webhook POST received (478 bytes)
+2026-03-27 19:07:55,850 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 19:07:55,929 INFO [app.routes.webhook] Webhook POST received (483 bytes)
+2026-03-27 19:07:55,930 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 19:09:30,868 INFO [app.routes.webhook] Webhook POST received (478 bytes)
+2026-03-27 19:09:30,870 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 19:22:06,167 INFO [app.routes.webhook] Webhook POST received (475 bytes)
+2026-03-27 19:22:06,168 INFO [app.routes.webhook] Received from 919600110982 (Vageesh): Hello
+2026-03-27 19:22:06,170 INFO [app.core.message_handler] [MSG] Processing from 919600110982: Hello
+2026-03-27 19:22:06,170 INFO [app.core.message_handler] [MSG] Intent: chat
+2026-03-27 19:22:07,227 INFO [httpx] HTTP Request: POST https://graph.facebook.com/v21.0/964880710037524/messages "HTTP/1.1 200 OK"
+2026-03-27 19:22:09,178 INFO [httpx] HTTP Request: POST https://baarilabs.openai.azure.com/openai/deployments/gpt-4o/chat/completions?api-version=2024-12-01-preview "HTTP/1.1 200 OK"
+2026-03-27 19:22:10,038 INFO [httpx] HTTP Request: POST https://graph.facebook.com/v21.0/964880710037524/messages "HTTP/1.1 200 OK"
+2026-03-27 19:22:10,040 INFO [app.services.whatsapp_service] Message sent to 919600110982, id=wamid.HBgMOTE5NjAwMTEwOTgyFQIAERgSNjMyQkZCODJDODNDODIyMjgyAA==
+2026-03-27 19:22:10,041 INFO [app.core.message_handler] [MSG] Reply sent to 919600110982: Hi there! 😊  
+How can I assist you today?
+2026-03-27 19:22:11,707 INFO [app.routes.webhook] Webhook POST received (493 bytes)
+2026-03-27 19:22:11,708 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 19:22:11,717 INFO [app.routes.webhook] Webhook POST received (498 bytes)
+2026-03-27 19:22:11,718 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 19:22:11,725 INFO [app.routes.webhook] Webhook POST received (498 bytes)
+2026-03-27 19:22:11,725 INFO [app.routes.webhook] No text messages in payload (status update or non-text)
+2026-03-27 19:23:08,366 INFO [app.routes.webhook] Webhook POST received (493 bytes)
+2026-03-27 19:23:08,396 INFO [app.routes.webhook] No text messages in payload (status update or non-text)

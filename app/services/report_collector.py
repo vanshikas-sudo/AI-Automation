@@ -359,8 +359,11 @@ async def collect_report_data(agent, fiscal_year: str = "2025-2026", org_id: str
     logger.info("[COLLECTOR] Starting direct data collection for FY %s (org=%s)", fiscal_year, org_id)
 
     fy_start, fy_end = _parse_fy_range(fiscal_year)
+
+    if not org_id:
+        logger.error("[COLLECTOR] org_id is empty! Zoho API calls will likely fail.")
+
     qp = {"query_params": {"organization_id": org_id, "per_page": 200}}
-    qp_basic = {"query_params": {"organization_id": org_id}}
 
     # ── Phase 1: Fetch raw data from Zoho via direct tool calls ──────
 
@@ -397,8 +400,7 @@ async def collect_report_data(agent, fiscal_year: str = "2025-2026", org_id: str
     for key, tool_name in tool_names.items():
         tool = tool_map.get(tool_name)
         if tool:
-            params = qp if key == "invoices" else qp_basic
-            tasks[key] = asyncio.create_task(_call_tool(tool, params))
+            tasks[key] = asyncio.create_task(_call_tool(tool, qp))
         else:
             logger.warning("[COLLECTOR] Tool %s not found in tool_map", tool_name)
 
