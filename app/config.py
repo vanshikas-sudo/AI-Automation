@@ -52,6 +52,11 @@ class Settings(BaseSettings):
     # Redis (queue broker + rule storage + DLQ)
     redis_url: str = "redis://localhost:6379/0"
 
+    # Internal API key — protects /messages/send from unauthenticated callers.
+    # Set a strong random value (e.g. `openssl rand -hex 32`) in your environment.
+    # If left empty the endpoint returns 501.
+    internal_api_key: str = ""
+
     # Token optimization
     max_history_messages: int = 10
     session_ttl_minutes: int = 30

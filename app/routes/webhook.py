@@ -87,15 +87,28 @@ async def receive_message(request: Request, background_tasks: BackgroundTasks):
     return {"status": "ok"}
 
 
-# ── Send a message via API ───────────────────────────────────────
+# ── Send a message via API (internal — requires API key) ─────────
 
 class SendMessageRequest(BaseModel):
     to: str
     message: str
 
 
+def _require_api_key(request: Request) -> None:
+    """Light API-key guard so only authorised callers can push messages."""
+    settings = get_settings()
+    expected = getattr(settings, "internal_api_key", "")
+    if not expected:
+        # Key not configured → endpoint is disabled
+        raise HTTPException(status_code=501, detail="Internal API key not configured")
+    provided = request.headers.get("X-API-Key", "")
+    if provided != expected:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+
 @router.post("/messages/send")
 async def send_message(body: SendMessageRequest, request: Request):
+    _require_api_key(request)
     wa = WhatsAppService(request.app.state.http_client)
     result = await wa.send_text_message(to=body.to, body=body.message)
     return {"status": "sent", "detail": result}
@@ -105,17 +118,50 @@ async def send_message(body: SendMessageRequest, request: Request):
 
 @router.get("/health")
 async def health_check(request: Request):
+    """
+    Health probe for Azure App Service (and any load balancer).
+
+    Returns 200 when the app is ready to handle traffic.
+    Returns 503 when a critical component failed to initialise — Azure will
+    remove the instance from rotation and attempt a restart.
+
+    Critical:  LLM model must be present (app is useless without it).
+    Degraded:  MCP not connected → CHAT still works, ZOHO_CRUD/REPORT won't.
+               We still return 200 so Azure doesn't restart needlessly, but
+               the 'degraded' flag lets your monitoring dashboard alert you.
+    """
+    from fastapi.responses import JSONResponse
+
     settings = get_settings()
     mcp = getattr(request.app.state, "mcp_manager", None)
-    return {
-        "status": "ok",
+    llm_ready = getattr(request.app.state, "llm_model", None) is not None
+    mcp_connected = bool(mcp and mcp.is_connected)
+
+    # --- determine overall status -------------------------------------------
+    if not llm_ready:
+        status, http_code = "unhealthy", 503
+    elif not mcp_connected:
+        status, http_code = "degraded", 200   # still alive, just limited
+    else:
+        status, http_code = "ok", 200
+
+    payload = {
+        "status": status,
         "architecture": "v2-intent-routed",
-        "llm_provider": settings.llm_provider.value,
-        "llm_model": settings.resolved_model,
-        "mcp_connected": bool(mcp and mcp.is_connected),
-        "tools_registered": mcp.registry.tool_count if mcp else 0,
-        "zoho_org_id": mcp.zoho_org_id if mcp else None,
+        "components": {
+            "llm": {
+                "ready": llm_ready,
+                "provider": settings.llm_provider.value,
+                "model": settings.resolved_model,
+            },
+            "mcp": {
+                "connected": mcp_connected,
+                "tools_registered": mcp.registry.tool_count if mcp else 0,
+                "zoho_org_id": mcp.zoho_org_id if mcp else None,
+            },
+        },
     }
+    return JSONResponse(content=payload, status_code=http_code)
 
 
 @router.get("/test-report")
