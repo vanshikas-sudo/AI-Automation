@@ -43,8 +43,18 @@ class Settings(BaseSettings):
     groq_default_model: str = "llama-3.3-70b-versatile"
 
     # MCP Server Configuration
-    mcp_zoho_url: str = "https://alamdar-60066849453.zohomcp.in/mcp/message?key=eb845ca8d22bf98f43e7f3b9296c2234"
+    mcp_zoho_url: str = ""
     zoho_org_id: str = ""
+
+    # Timezone (used for scheduling and display)
+    timezone: str = "Asia/Kolkata"
+
+    # Redis (queue broker + rule storage + DLQ)
+    redis_url: str = "redis://localhost:6379/0"
+
+    # Token optimization
+    max_history_messages: int = 10
+    session_ttl_minutes: int = 30
 
     model_config = {
         "env_file": ".env",

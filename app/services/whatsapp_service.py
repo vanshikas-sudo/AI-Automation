@@ -35,6 +35,10 @@ class WhatsAppService:
 
     async def send_text_message(self, to: str, body: str) -> dict:
         """Send a text message to a WhatsApp number."""
+        # WhatsApp has a 4096 char limit per message
+        if len(body) > 4096:
+            body = body[:4090] + "\n..."
+
         payload = {
             "messaging_product": "whatsapp",
             "recipient_type": "individual",
@@ -42,33 +46,44 @@ class WhatsAppService:
             "type": "text",
             "text": {"preview_url": False, "body": body},
         }
-        response = await self.http_client.post(
-            f"{self.base_url}/messages",
-            headers=self.headers,
-            json=payload,
-        )
-        if response.status_code != 200:
-            logger.error(
-                "WhatsApp API error %s: %s", response.status_code, response.text
+        try:
+            response = await self.http_client.post(
+                f"{self.base_url}/messages",
+                headers=self.headers,
+                json=payload,
             )
-            response.raise_for_status()
-        data = response.json()
-        logger.info("Message sent to %s, id=%s", to, data.get("messages", [{}])[0].get("id"))
-        return data
+            if response.status_code != 200:
+                logger.error(
+                    "WhatsApp API error %s — to=%s body_len=%d response=%s",
+                    response.status_code, to, len(body), response.text,
+                )
+                return {"error": response.text}
+            data = response.json()
+            logger.info("Message sent to %s, id=%s", to, data.get("messages", [{}])[0].get("id"))
+            return data
+        except Exception as e:
+            logger.error("send_text_message failed: %s", e)
+            return {"error": str(e)}
 
     async def mark_as_read(self, message_id: str) -> None:
-        """Mark an incoming message as read (blue ticks)."""
+        """Mark an incoming message as read (blue ticks). Never raises."""
         payload = {
             "messaging_product": "whatsapp",
             "status": "read",
             "message_id": message_id,
         }
-        response = await self.http_client.post(
-            f"{self.base_url}/messages",
-            headers=self.headers,
-            json=payload,
-        )
-        response.raise_for_status()
+        try:
+            response = await self.http_client.post(
+                f"{self.base_url}/messages",
+                headers=self.headers,
+                json=payload,
+            )
+            if response.status_code != 200:
+                logger.warning(
+                    "mark_as_read failed %s: %s", response.status_code, response.text
+                )
+        except Exception as e:
+            logger.warning("mark_as_read error: %s", e)
 
     async def send_document(self, to: str, file_path: str,
                            filename: str | None = None,
@@ -88,14 +103,24 @@ class WhatsAppService:
         file_size = os.path.getsize(file_path)
         logger.info("Uploading document %s (%d KB) to WhatsApp…", filename, file_size // 1024)
 
-        # Step 1: Upload media
-        with open(file_path, "rb") as f:
-            upload_resp = await self.http_client.post(
-                f"{self.base_url}/media",
-                headers={"Authorization": f"Bearer {self.settings.whatsapp_api_token}"},
-                files={"file": (filename, f, "application/pdf")},
-                data={"messaging_product": "whatsapp", "type": "application/pdf"},
-            )
+        # Step 1: Upload media (use generous timeout + retry for large files)
+        upload_timeout = httpx.Timeout(300.0, connect=30.0)
+        upload_resp = None
+        for attempt in range(3):
+            try:
+                with open(file_path, "rb") as f:
+                    upload_resp = await self.http_client.post(
+                        f"{self.base_url}/media",
+                        headers={"Authorization": f"Bearer {self.settings.whatsapp_api_token}"},
+                        files={"file": (filename, f, "application/pdf")},
+                        data={"messaging_product": "whatsapp", "type": "application/pdf"},
+                        timeout=upload_timeout,
+                    )
+                break  # success
+            except (httpx.ReadError, httpx.ConnectError, httpx.WriteError) as e:
+                logger.warning("Media upload attempt %d failed: %s", attempt + 1, e)
+                if attempt == 2:
+                    raise
         if upload_resp.status_code != 200:
             logger.error("Media upload failed %s: %s",
                          upload_resp.status_code, upload_resp.text)

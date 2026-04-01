@@ -28,3 +28,14 @@ Thumbs.db
 # Generated reports
 *.pdf
 agent_error.log
+logs/
+*.log
+
+# Celery
+celerybeat-schedule
+celerybeat-schedule-shm
+celerybeat-schedule-wal
+
+# Test files
+test_mcp.py
+test_chart_visibility.py
