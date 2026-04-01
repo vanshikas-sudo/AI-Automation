@@ -17,3 +17,8 @@ langgraph>=0.2.0
 # PDF report generation
 reportlab>=4.0.0
 matplotlib>=3.8.0
+
+# Automation engine — queue + workers
+celery[redis]>=5.4.0
+redis>=5.0.0
+cron-descriptor>=1.4.0

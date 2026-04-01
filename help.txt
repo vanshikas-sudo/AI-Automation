@@ -7,3 +7,15 @@ curl -X POST http://localhost:8000/messages/send -H "Content-Type: application/j
 & "C:\Users\pc\Downloads\ngrok-v3-stable-windows-amd64\ngrok.exe" http 8000
 
 python -m uvicorn app.main:app --reload --port 8000
+
+wsl -d Ubuntu -u root -- bash -c "redis-server --daemonize yes"
+
+celery -A app.worker.celery_app beat --loglevel=info
+
+docker start redis-bot
+
+
+
+celery -A app.worker.celery_app worker --loglevel=info --pool=solo
+
+celery -A app.worker.celery_app beat --loglevel=info

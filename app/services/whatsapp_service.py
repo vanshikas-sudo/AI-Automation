@@ -103,14 +103,24 @@ class WhatsAppService:
         file_size = os.path.getsize(file_path)
         logger.info("Uploading document %s (%d KB) to WhatsApp…", filename, file_size // 1024)
 
-        # Step 1: Upload media
-        with open(file_path, "rb") as f:
-            upload_resp = await self.http_client.post(
-                f"{self.base_url}/media",
-                headers={"Authorization": f"Bearer {self.settings.whatsapp_api_token}"},
-                files={"file": (filename, f, "application/pdf")},
-                data={"messaging_product": "whatsapp", "type": "application/pdf"},
-            )
+        # Step 1: Upload media (use generous timeout + retry for large files)
+        upload_timeout = httpx.Timeout(300.0, connect=30.0)
+        upload_resp = None
+        for attempt in range(3):
+            try:
+                with open(file_path, "rb") as f:
+                    upload_resp = await self.http_client.post(
+                        f"{self.base_url}/media",
+                        headers={"Authorization": f"Bearer {self.settings.whatsapp_api_token}"},
+                        files={"file": (filename, f, "application/pdf")},
+                        data={"messaging_product": "whatsapp", "type": "application/pdf"},
+                        timeout=upload_timeout,
+                    )
+                break  # success
+            except (httpx.ReadError, httpx.ConnectError, httpx.WriteError) as e:
+                logger.warning("Media upload attempt %d failed: %s", attempt + 1, e)
+                if attempt == 2:
+                    raise
         if upload_resp.status_code != 200:
             logger.error("Media upload failed %s: %s",
                          upload_resp.status_code, upload_resp.text)

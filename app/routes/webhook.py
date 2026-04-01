@@ -9,6 +9,8 @@ The webhook itself just:
 
 import asyncio
 import logging
+import time
+from collections import OrderedDict
 
 from fastapi import APIRouter, Request, Query, HTTPException, BackgroundTasks
 from pydantic import BaseModel
@@ -20,6 +22,23 @@ from app.utils.validators import verify_webhook_signature
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+# ── Message deduplication (WhatsApp sends duplicate webhooks) ────
+_seen_message_ids: OrderedDict[str, float] = OrderedDict()
+_DEDUP_MAX = 500  # max tracked IDs
+_DEDUP_TTL = 120  # seconds
+
+
+def _is_duplicate(message_id: str) -> bool:
+    """Check if we've already processed this message ID."""
+    now = time.monotonic()
+    # Evict old entries
+    while _seen_message_ids and len(_seen_message_ids) > _DEDUP_MAX:
+        _seen_message_ids.popitem(last=False)
+    if message_id in _seen_message_ids:
+        return True
+    _seen_message_ids[message_id] = now
+    return False
 
 
 # ── Webhook verification (Meta sends GET to confirm URL) ─────────
@@ -59,6 +78,9 @@ async def receive_message(request: Request, background_tasks: BackgroundTasks):
         logger.info("No text messages in payload (status update or non-text)")
 
     for msg in messages:
+        if _is_duplicate(msg.message_id):
+            logger.info("Skipping duplicate message %s from %s", msg.message_id, msg.from_number)
+            continue
         logger.info("Received from %s (%s): %s", msg.from_number, msg.name, msg.text)
         background_tasks.add_task(handle_message, msg, request.app.state)
 

@@ -6,6 +6,7 @@ Includes conversation history from SessionManager so the user
 can have multi-turn interactions ("create invoice" → "add line item").
 """
 
+import json
 import logging
 
 from langgraph.prebuilt import create_react_agent
@@ -35,11 +36,17 @@ class ZohoCrudAgent(BaseAgent):
         # Determine org context for this user
         org_id = self._resolve_org_id(msg.from_number, mcp_manager)
 
-        # Only provide tools when org is known; otherwise LLM must ask first
         if org_id:
+            # Org known — give full tool set
             tools = registry.get_for_intent(Intent.ZOHO_CRUD)
-        else:
+        elif mcp_manager.zoho_organizations:
+            # Multiple orgs known but none selected — no tools, prompt asks
             tools = []
+        else:
+            # Orgs not fetched yet (startup failed) — give list_organizations
+            # tool so the agent can discover orgs and ask user to pick one
+            org_tool = registry.get_tool("ZohoBooks_list_organizations")
+            tools = [org_tool] if org_tool else []
 
         prompt = build_prompt(
             Intent.ZOHO_CRUD,
@@ -55,6 +62,10 @@ class ZohoCrudAgent(BaseAgent):
         try:
             response = await agent.ainvoke({"messages": messages})
             reply = SessionManager.extract_reply(response)
+
+            # If we just discovered orgs via tool call, cache them in mcp_manager
+            if not mcp_manager.zoho_organizations:
+                self._try_capture_orgs_from_response(response, mcp_manager)
 
         except Exception as e:
             logger.error(
@@ -93,6 +104,47 @@ class ZohoCrudAgent(BaseAgent):
                     SessionManager.set_org(phone, org_id, org["name"])
                     logger.info("User %s selected org: %s (%s)", phone, org["name"], org_id)
                     break
+
+    @staticmethod
+    def _try_capture_orgs_from_response(response: dict, mcp_manager) -> None:
+        """Extract org data from agent tool responses and cache in mcp_manager."""
+        try:
+            messages = response.get("messages", [])
+            for msg in messages:
+                # Look for ToolMessage with list_organizations data
+                if not hasattr(msg, "name") or msg.name != "ZohoBooks_list_organizations":
+                    continue
+                content = msg.content if hasattr(msg, "content") else ""
+                text = content if isinstance(content, str) else str(content)
+
+                # Try to parse JSON from the tool response
+                data = mcp_manager._parse_json_response(text)
+                if not data:
+                    continue
+                orgs = data.get("organizations", [])
+                if not orgs:
+                    continue
+
+                mcp_manager.zoho_organizations = [
+                    {
+                        "name": o.get("name", ""),
+                        "organization_id": o.get("organization_id", ""),
+                        "is_default_org": o.get("is_default_org", False),
+                    }
+                    for o in orgs
+                ]
+                if len(mcp_manager.zoho_organizations) == 1:
+                    mcp_manager.zoho_org_id = str(
+                        mcp_manager.zoho_organizations[0].get("organization_id", "")
+                    )
+                org_names = [o["name"] for o in mcp_manager.zoho_organizations]
+                logger.info(
+                    "Captured %d org(s) from agent tool response: %s",
+                    len(mcp_manager.zoho_organizations), org_names,
+                )
+                return
+        except Exception:
+            logger.debug("Failed to capture orgs from agent response", exc_info=True)
 
 
 # Module-level singleton

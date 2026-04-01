@@ -291,7 +291,12 @@ Slack + Web Chat + Email + Cross-channel session continuity
 
 | #   | Lesson     | Context | Date |
 | --- | ---------- | ------- | ---- |
-| L1  | (none yet) |         |      |
+| L1  | Never create new event loops per task in Celery | `_run_async()` was creating/destroying event loops & thread pools per call, causing `RuntimeError: Event loop is closed` after 30-60 min. Fix: single dedicated loop for entire worker process. | 2026-03-31 |
+| L2  | Never create new httpx.AsyncClient per MCP call | Each `async with httpx.AsyncClient()` opens a new TCP connection pool. In a Celery worker firing every 5 min, this causes socket exhaustion (`OSError 10048`) after 1-2 hours on Windows. Fix: module-level shared client. | 2026-03-31 |
+| L3  | SSE streams MUST have a timeout | `stream.aiter_lines()` with no timeout hangs the worker forever if MCP server drips data slowly. Fix: `asyncio.timeout(90)` wrapper. | 2026-03-31 |
+| L4  | org_id must be resolved at rule CREATION time | Empty `organization_id: ""` in rule params means the worker (separate process) has no way to know which org to query. Fix: resolve from user session at creation, store on the rule, inject at execution. | 2026-03-31 |
+| L5  | Don't hardcode MCP URLs in config.py defaults | `config.py` had a hardcoded default `mcp_zoho_url` with embedded credentials. Must always come from .env. | 2026-03-31 |
+| L6  | Wrap Beat's evaluate_all_rules in try/except | If `get_active_rules()` throws, Beat crashes silently and never evaluates rules again. Must catch and log. | 2026-03-31 |
 
 ---
 
@@ -299,13 +304,21 @@ Slack + Web Chat + Email + Cross-channel session continuity
 
 > **Update this section at the START and END of every implementation session.**
 
-### Current Phase: Phase 0 (Planning)
+### Current Phase: Phase 4 (Event-Driven Automation Engine)
 
-### Last Completed Task: V2 architecture document + Figma diagrams
+### Last Completed Task: Celery stability + dynamic org_id fix (2026-03-31)
+- Rewrote `app/worker/tasks.py`: single event loop, shared httpx/Redis pools, SSE timeout
+- Added `org_id` field to `EventRule` model (backward-compatible, defaults to "")
+- `automation_agent.py` resolves org_id from user session at rule creation time
+- Worker injects org_id into every MCP call via `_inject_org_id()`
+- Auto-detection fallback for single-org accounts (calls `list_organizations`)
+- REST API `/automation/rules` POST now accepts optional `org_id`
+- Removed hardcoded default MCP URL from `config.py`
+- All 25/26 tests pass (1 pre-existing failure in whatsapp_service test)
 
-### Next Task: Create phase-by-phase implementation files, then start Phase 1
+### Next Task: Add PostgreSQL persistence for rules (currently Redis-only), NL→Rule parser, WhatsApp conversational rule management
 
-### Blockers: None
+### Blockers: Redis must be running locally for automation features to work
 
 ### Open Questions: None
 
@@ -331,5 +344,5 @@ Slack + Web Chat + Email + Cross-channel session continuity
 
 ---
 
-_Last updated: 2026-03-27_
-_Phase: 0 — Planning_
+_Last updated: 2026-03-31_
+_Phase: 4 — Event-Driven Automation Engine_

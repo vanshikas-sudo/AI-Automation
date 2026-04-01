@@ -101,5 +101,14 @@ def build_prompt(
                 "Once the user tells you the organization name, use it for the request. "
                 "Do NOT proceed with any Zoho tool call until the user has selected an organization."
             )
+        else:
+            # No orgs detected yet — instruct agent to fetch them first
+            parts.append(
+                "IMPORTANT: The Zoho organization has not been determined yet. "
+                "Before performing ANY Zoho operation, you MUST first call the "
+                "ZohoBooks_list_organizations tool to discover available organizations. "
+                "Then present the organization names to the user and ask them to choose one. "
+                "Do NOT proceed with any other tool call until the user has selected an organization."
+            )
 
     return "\n\n".join(parts)
